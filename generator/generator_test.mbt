@@ -21,6 +21,24 @@ test "只生成指定 trait，保持类型和错误效果" {
 }
 
 ///|
+test "允许为已有同名测试替身的包指定生成类型名" {
+  let source = "trait Transport { async fn send(Self, Int32) -> Int32 }"
+  let output = @generator.generate(
+    source,
+    "Transport",
+    mock_name="GeneratedTransport",
+  )
+  assert_true(output.contains("impl Transport for GeneratedTransport"))
+  assert_false(output.contains("MockTransport"))
+  let rejected = Ok(
+    @generator.generate(source, "Transport", mock_name="Bad Name"),
+  ) catch {
+    @generator.GenerationError(message) => Err(message)
+  }
+  assert_true(rejected is Err(message) && message.contains("invalid_mock_name"))
+}
+
+///|
 test "解析错误和不存在的 trait 给出清楚的错误" {
   for
     (source, name, expected) in [

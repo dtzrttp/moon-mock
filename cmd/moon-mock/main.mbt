@@ -6,8 +6,8 @@ priv suberror UsageError {
 ///|
 let usage =
   #|用法：
-  #|  moon-mock generate <文件.mbt> <Trait> [--output <生成文件_wbtest.mbt>]
-  #|  moon-mock generate <文件.mbt> <Trait> --check <生成文件_wbtest.mbt>
+  #|  moon-mock generate <文件.mbt> <Trait> [--mock-name <类型名>]
+  #|      [--output <生成文件_wbtest.mbt> | --check <生成文件_wbtest.mbt>]
   #|  moon-mock --help
 
 ///|
@@ -33,17 +33,33 @@ fn run(args : ArrayView[String]) -> Unit raise {
     println(usage)
     return
   }
-  let (source_file, trait_name, mode) = match args {
-    ["generate", source, trait_name] => (source, trait_name, None)
-    ["generate", source, trait_name, option, output] if option == "--output" ||
-      option == "--check" => (source, trait_name, Some((option, output)))
-    _ => raise UsageError(usage)
+  guard args is ["generate", source_file, trait_name, .. options] else {
+    raise UsageError(usage)
+  }
+  if options.length() % 2 != 0 {
+    raise UsageError(usage)
+  }
+  let mut mode : (String, String)? = None
+  let mut mock_name : String? = None
+  for i = 0; i < options.length(); i = i + 2 {
+    let option = options[i]
+    let value = options[i + 1]
+    match option {
+      "--mock-name" if mock_name is None => mock_name = Some(value)
+      "--output" | "--check" if mode is None => mode = Some((option, value))
+      _ => raise UsageError("未知、重复或冲突的选项：" + option)
+    }
   }
   if !source_file.has_suffix(".mbt") {
     raise UsageError("输入必须是 .mbt 文件")
   }
   let source = @fs.read_file_to_string(source_file)
-  let generated = @generator.generate(source, trait_name, filename=source_file)
+  let generated = @generator.generate(
+    source,
+    trait_name,
+    filename=source_file,
+    mock_name?,
+  )
   match mode {
     None => println(generated.trim_end().to_owned())
     Some((option, output)) => {

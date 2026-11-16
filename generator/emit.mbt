@@ -58,15 +58,37 @@ fn emit_method(
 }
 
 ///|
+fn valid_type_name(name : String) -> Bool {
+  let mut first = true
+  for char in name {
+    let upper = 'A' <= char && char <= 'Z'
+    let lower = 'a' <= char && char <= 'z'
+    let digit = '0' <= char && char <= '9'
+    if (first && !upper) ||
+      (!first && !(upper || lower || digit || char == '_')) {
+      return false
+    }
+    first = false
+  }
+  !first
+}
+
+///|
 /// 生成同包白盒测试使用的 MoonBit 源码。
 pub fn generate(
   source : String,
   trait_name : String,
   filename~ : String = "<stdin>",
+  mock_name? : String,
 ) -> String raise GenerationError {
+  let mock = mock_name.unwrap_or("Mock" + trait_name)
+  if mock_name is Some(_) && !valid_type_name(mock) {
+    raise GenerationError(
+      filename + ": invalid_mock_name: 生成类型名应以大写字母开头",
+    )
+  }
   let signatures = collect(source, trait_name, filename)
   let out = StringBuilder()
-  let mock = "Mock" + trait_name
   out.write_string(
     "// 由 moon-mock 生成，请从原 trait 重新生成。\n\n",
   )
