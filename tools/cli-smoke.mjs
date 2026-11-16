@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const target = process.argv[2] ?? 'js';
 assert(['js', 'native'].includes(target), 'target 必须是 js 或 native');
 const base = join(root, '_build', target, 'debug', 'build', 'cmd', 'moon-mock', 'moon-mock');
-const executable = target === 'js' ? process.execPath : base + (process.platform === 'win32' ? '.exe' : '');
+const executable = target === 'js' ? process.execPath : base + '.exe';
 const prefix = target === 'js' ? [base + '.js'] : [];
 
 function run(expectedCode, ...args) {
@@ -25,6 +25,8 @@ const known = 'examples/transaction/transaction.mbt';
 const command = ['generate', known, 'Transaction'];
 assert.match(run(0, '--help').stdout, /generate/);
 assert.match(run(0, ...command).stdout, /struct MockTransaction/);
+assert.match(run(0, ...command, '--mock-name', 'GeneratedTransaction').stdout,
+  /struct GeneratedTransaction/);
 assert.match(run(1, 'generate', known, 'Missing').stderr, /trait_not_found/);
 for (const [stem, name] of [['transaction', 'Transaction'], ['transport', 'Transport']]) {
   run(0, 'generate', 'examples/' + stem + '/' + stem + '.mbt', name,
@@ -52,4 +54,4 @@ try {
   try { unlinkSync(fixture); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   rmdirSync(scratch);
 }
-console.log(target + ' CLI 实际执行 12 个命令，覆盖生成、错误、过期文件与覆盖保护。');
+console.log(target + ' CLI 实际执行 13 个命令，覆盖生成、名称配置、错误、过期文件与覆盖保护。');
