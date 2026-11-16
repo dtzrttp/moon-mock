@@ -1,0 +1,11 @@
+import {
+  "dtzrttp/moon-mock/generator",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/env",
+  "moonbitlang/x/fs",
+  "moonbitlang/x/sys",
+}
+
+pkgtype(kind: "executable")
+
+supported_targets = "native+js"
