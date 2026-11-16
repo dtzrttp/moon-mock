@@ -28,17 +28,30 @@ writeFileSync(join(consumer, 'moon.pkg'), [
   '',
 ].join('\n'));
 writeFileSync(join(consumer, 'traits.mbt'), [
+  'pub(open) trait Availability { fn available(Self) -> Bool }',
   'pub(open) trait Catalog {',
   '  fn lookup(Self, Int32) -> (String, Int32)?',
+  '  fn status(Self, &Availability) -> &Availability = _',
   '}',
+  'impl Catalog with fn status(_self, fallback) { fallback }',
   '',
 ].join('\n'));
 writeFileSync(join(consumer, 'consumer_wbtest.mbt'), [
+  'priv struct Stock(Bool)',
+  'impl Availability for Stock with fn available(self) { self.0 }',
   'test "不同模块的使用方只导入运行库" {',
   '  @mock_runtime.with_mock(c => {',
   '    let mock = MockCatalog::new(c)',
   '    mock.expect_lookup(@mock_runtime.equal_to(42), Some(("book", 3)))',
   '    assert_eq(Catalog::lookup(mock, 42), Some(("book", 3)))',
+  '  })',
+  '}',
+  'test "调用带默认实现的方法时使用设定的返回值" {',
+  '  @mock_runtime.with_mock(c => {',
+  '    let mock = MockCatalog::new(c)',
+  '    mock.expect_status(@mock_runtime.matching("缺货", stock => !stock.available()), Stock(true))',
+  '    let status = Catalog::status(mock, Stock(false))',
+  '    assert_true(status.available())',
   '  })',
   '}',
   '',
@@ -54,5 +67,5 @@ function run(program, args, cwd) {
 const cli = join(root, '_build', 'js', 'debug', 'build', 'cmd', 'moon-mock', 'moon-mock.js');
 run(process.execPath, [cli, 'generate', 'traits.mbt', 'Catalog', '--output', 'mock_catalog_wbtest.mbt'], consumer);
 const result = run('moon', ['test', '.', '--target', 'js', '--deny-warn'], consumer);
-assert.match(result, /Total tests: 1, passed: 1, failed: 0/);
-console.log('独立消费方测试 1/1 通过，保留工作区 ' + sandbox);
+assert.match(result, /Total tests: 2, passed: 2, failed: 0/);
+console.log('独立消费方测试 2/2 通过，保留工作区 ' + sandbox);

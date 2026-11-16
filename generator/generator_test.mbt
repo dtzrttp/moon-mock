@@ -55,12 +55,33 @@ test "解析错误和不存在的 trait 给出清楚的错误" {
 }
 
 ///|
+test "生成默认方法的显式覆盖" {
+  let source =
+    #|trait Source {
+    #|  fn read(Self) -> Int raise ReadError = _
+    #|  async fn ready(Self) -> Bool noraise = _
+    #|}
+  let out = @generator.generate(source, "Source")
+  assert_true(out.contains("impl Source for MockSource with fn read"))
+  assert_true(out.contains("expect_read"))
+  assert_true(out.contains("raise_read"))
+  assert_true(out.contains("expect_ready"))
+}
+
+///|
+test "保留参数和返回值中的 trait 对象类型" {
+  let source = "trait Source { fn convert(Self, &@io.Input) -> &Output }"
+  let out = @generator.generate(source, "Source")
+  assert_true(out.contains("&@io.Input"))
+  assert_true(out.contains("-> &Output"))
+}
+
+///|
 test "拒绝未支持的签名并标记源码位置" {
   for
     source in [
       "trait Foo : Base { fn f(Self) -> Unit }", "trait Foo { fn[A] f(Self, A) -> A }",
       "trait Foo { fn f(Self, id~ : Int) -> Int }", "trait Foo { fn f(Self) -> Self }",
-      "trait Foo { fn f(Self) -> Int = _ }",
     ] {
     let result = Ok(@generator.generate(source, "Foo", filename="traits.mbt")) catch {
       @generator.GenerationError(message) => Err(message)

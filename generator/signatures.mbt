@@ -29,16 +29,29 @@ fn unsupported(
 }
 
 ///|
+fn constructor_name(
+  constr_id : @syntax.ConstrId,
+  file : String,
+) -> String raise GenerationError {
+  match constr_id.id {
+    Ident(name="Self") => {
+      unsupported(
+        file,
+        constr_id.loc,
+        "Self 只能出现在首个接收者位置",
+      )
+      ""
+    }
+    Ident(name~) => name
+    Dot(pkg~, id~) => "@" + pkg + "." + id
+  }
+}
+
+///|
 fn type_text(typ : @syntax.Type, file : String) -> String raise GenerationError {
   match typ {
-    Name(constr_id~, tys~, loc~) => {
-      let name = match constr_id.id {
-        Ident(name~) => name
-        Dot(pkg~, id~) => "@" + pkg + "." + id
-      }
-      if name == "Self" {
-        unsupported(file, loc, "Self 只能出现在首个接收者位置")
-      }
+    Name(constr_id~, tys~, ..) => {
+      let name = constructor_name(constr_id, file)
       let args = []
       for child in tys.iter() {
         args.push(type_text(child, file))
@@ -49,6 +62,7 @@ fn type_text(typ : @syntax.Type, file : String) -> String raise GenerationError 
         name + "[" + args.join(", ") + "]"
       }
     }
+    Object(constr_id) => "&" + constructor_name(constr_id, file)
     Option(ty~, ..) => type_text(ty, file) + "?"
     Tuple(tys~, ..) => {
       let args = []
@@ -61,7 +75,7 @@ fn type_text(typ : @syntax.Type, file : String) -> String raise GenerationError 
       unsupported(
         file,
         typ.loc(),
-        "首版支持命名类型、类型应用、元组和可选类型",
+        "支持命名类型、类型应用、trait 对象、元组和可选类型",
       )
       ""
     }
@@ -83,13 +97,6 @@ fn collect_signature(
 ) -> Signature raise GenerationError {
   if !(declared_method.quantifiers is @list.Empty) {
     unsupported(file, declared_method.loc, "暂不支持方法泛型")
-  }
-  if declared_method.has_default is Some(_) {
-    unsupported(
-      file,
-      declared_method.loc,
-      "暂不支持带默认实现的方法",
-    )
   }
   if declared_method.nocancel_ is Some(_) {
     unsupported(file, declared_method.loc, "暂不支持 nocancel 方法")
