@@ -2,8 +2,8 @@
 fn Signature::arg_type(self : Signature) -> String {
   match self.args.length() {
     0 => "Unit"
-    1 => self.args[0]
-    _ => "(" + self.args.join(", ") + ")"
+    1 => self.args[0].value_type
+    _ => "(" + self.args.map(arg => arg.value_type).join(", ") + ")"
   }
 }
 
@@ -20,6 +20,15 @@ fn Signature::effect(self : Signature) -> String {
 fn Signature::action_type(self : Signature) -> String {
   let prefix = if self.async_ { "async " } else { "" }
   prefix + "(" + self.arg_type() + ") -> " + self.returns + self.effect()
+}
+
+///|
+fn positional_name(base : String, labels : Array[String]) -> String {
+  let mut name = base
+  while labels.contains(name) {
+    name += "_"
+  }
+  name
 }
 
 ///|
@@ -45,15 +54,30 @@ fn emit_method(
       "\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::raise_\{name}(self : \{mock}, matcher : \{matcher}, error : \{error}, \{opts}) -> Unit {\n\{invoke}(matcher, _ => raise error, times~, sequence?)\n}\n",
     )
   }
-  let params = Array::makei(shape.args.length(), i => "arg_" + i.to_string())
-  let suffix = if params.is_empty() { "" } else { ", " + params.join(", ") }
-  let args = match params.length() {
+  let labels = shape.args.filter_map(arg => arg.label)
+  let receiver = positional_name("self", labels)
+  let params = [receiver]
+  let values = []
+  for i, arg in shape.args {
+    match arg.label {
+      Some(label) => {
+        params.push(label + (if arg.optional { "?" } else { "~" }))
+        values.push(label)
+      }
+      None => {
+        let binding = positional_name("arg_" + i.to_string(), labels)
+        params.push(binding)
+        values.push(binding)
+      }
+    }
+  }
+  let args = match values.length() {
     0 => "()"
-    1 => params[0]
-    _ => "(" + params.join(", ") + ")"
+    1 => values[0]
+    _ => "(" + values.join(", ") + ")"
   }
   out.write_string(
-    "\n///|\nimpl \{trait_name} for \{mock} with fn \{name}(self\{suffix}) {\n  let args = \{args}\n  let action = self.\{slot}.take(args)\n  action(args)\n}\n",
+    "\n///|\nimpl \{trait_name} for \{mock} with fn \{name}(\{params.join(", ")}) {\n  let args = \{args}\n  let action = \{receiver}.\{slot}.take(args)\n  action(args)\n}\n",
   )
 }
 

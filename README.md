@@ -56,6 +56,7 @@ test "失败后回滚" {
 - `expect_*` 设置常量返回，`respond_*` 用类型化回调计算结果，`raise_*` 为可抛错方法设置错误。
 - 生成的替身会显式覆盖带默认实现的方法。与其他方法一样，调用前须登记预期，未登记的调用会失败。
 - `any()` 接受任意参数，`equal_to(value)` 用 `Eq` 判断并用 `Debug` 展示实际值，`matching(描述, 谓词)` 可匹配不实现 `Eq` 的类型。零个参数以 `Unit` 表示，多个参数组成元组。
+- 标签参数在调用处沿用原名，匹配器和回调按 trait 声明顺序接收值。例如 `fn find(Self, String, limit? : Int32) -> Int32` 的匹配值是 `("书", Some(10))`，省略 `limit` 时是 `("书", None)`。
 - `times` 默认为 1。指定 `Sequence` 后，同组按登记顺序匹配。调用开始时计数，异步回调挂起不改变顺序。可匹配多个预期时先选择最早登记、还有次数且顺序允许的预期。
 - `with_mock` 和 `with_mock_async` 在测试体正常返回时核对遗漏调用。测试体的抛错或取消直接传播。意外调用立即失败，避免在 `noraise` 方法中返回伪造值或抛出 trait 外的错误。需要手动检查时可使用控制器的 `verify()` 或 `missing_calls()`。
 - 应在异步作用域内等待所有使用 mock 的任务完成。参数谓词应无副作用。不同测试各用自己的控制器。
@@ -71,8 +72,8 @@ test "失败后回滚" {
 
 ## 支持范围
 
-生成器支持同包的 `Self` 接收者方法，覆盖位置参数、命名类型、泛型类型应用、`&Trait` 对象、可选类型和元组。同步和异步方法可具有默认实现，错误效果支持具体或通用错误类型、异步默认错误和 `noraise`。签名中的类型需要能在同包测试中解析。标签参数、方法泛型、超 trait、函数类型参数、条件错误、`nocancel` 和跨包 trait 生成属于后续范围。未支持的签名会报告源码位置。
+生成器支持同包的 `Self` 接收者方法，覆盖位置参数、必填与可省略的标签参数、命名类型、泛型类型应用、`&Trait` 对象、可选类型和元组。同步和异步方法可具有默认实现，错误效果支持具体或通用错误类型、异步默认错误和 `noraise`。签名中的类型需要能在同包测试中解析。方法泛型、超 trait、函数类型参数、条件错误、`nocancel` 和跨包 trait 生成属于后续范围。未支持的签名会报告源码位置。
 
 ## 验证与许可
 
-CI 检查格式、静态检查、生成文件是否过期、JS/native 测试和 CLI 构建。可用 `node tools/cli-smoke.mjs js` 或 `node tools/cli-smoke.mjs native` 运行已构建的命令行验收，`node tools/consumer-smoke.mjs` 验证另一个 MoonBit 模块从生成到运行的流程。项目采用 Apache-2.0。 [来源与依赖许可](NOTICE.md)
+CI 检查格式、静态检查、生成文件是否过期、JS/native 测试和 CLI 构建。构建后执行 `node tools/cli-smoke.mjs js` 和 `node tools/cli-smoke.mjs native` 验收 CLI。`node tools/consumer-smoke.mjs js` 和 `node tools/consumer-smoke.mjs native` 验证另一个 MoonBit 模块从生成到运行的流程。项目采用 Apache-2.0。 [来源与依赖许可](NOTICE.md)

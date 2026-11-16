@@ -7,9 +7,16 @@ pub suberror GenerationError {
 pub extend GenerationError with Debug::{to_repr}
 
 ///|
+priv struct Argument {
+  value_type : String
+  label : String?
+  optional : Bool
+}
+
+///|
 priv struct Signature {
   name : String
-  args : Array[String]
+  args : Array[Argument]
   returns : String
   error : String?
   async_ : Bool
@@ -91,6 +98,37 @@ fn positional_type(arg : @syntax.Parameter) -> @syntax.Type? {
 }
 
 ///|
+fn collect_argument(
+  arg : @syntax.Parameter,
+  file : String,
+) -> Argument? raise GenerationError {
+  match arg {
+    DiscardPositional(ty=Some(ty), ..) | Positional(ty=Some(ty), ..) =>
+      Some({ value_type: type_text(ty, file), label: None, optional: false, })
+    Labelled(binder~, ty=Some(ty)) =>
+      Some({
+        value_type: type_text(ty, file),
+        label: Some(binder.name),
+        optional: false,
+      })
+    QuestionOptional(binder~, ty=Some(ty)) =>
+      Some({
+        value_type: "Option[" + type_text(ty, file) + "]",
+        label: Some(binder.name),
+        optional: true,
+      })
+    _ => {
+      unsupported(
+        file,
+        arg.loc(),
+        "要求带类型的位置参数或标签参数",
+      )
+      None
+    }
+  }
+}
+
+///|
 fn collect_signature(
   declared_method : @syntax.TraitMethodDecl,
   file : String,
@@ -107,18 +145,16 @@ fn collect_signature(
   let args = []
   let mut index = 0
   for param in declared_method.params.iter() {
-    guard positional_type(param) is Some(typ) else {
-      unsupported(file, param.loc(), "要求带类型的位置参数")
-      continue
-    }
     if index == 0 {
-      guard typ
-        is Name(constr_id={ id: Ident(name="Self"), .. }, tys=@list.Empty, ..) else {
+      guard positional_type(param)
+        is Some(
+          Name(constr_id={ id: Ident(name="Self"), .. }, tys=@list.Empty, ..)
+        ) else {
         unsupported(file, param.loc(), "首个参数必须是 Self")
         continue
       }
-    } else {
-      args.push(type_text(typ, file))
+    } else if collect_argument(param, file) is Some(arg) {
+      args.push(arg)
     }
     index += 1
   }

@@ -77,11 +77,27 @@ test "保留参数和返回值中的 trait 对象类型" {
 }
 
 ///|
+test "保留单个必填标签并使用原始类型匹配" {
+  let source = "trait Source { fn read(Self, id~ : Int32) -> Int32 }"
+  let out = @generator.generate(source, "Source")
+  assert_true(out.contains("fn read(self, id~)"))
+  assert_true(out.contains("Matcher[Int32]"))
+}
+
+///|
+test "为可省略的标签保留问号和 Option 匹配类型" {
+  let source = "trait Source { fn read(Self, id? : Int32) -> Int32 }"
+  let out = @generator.generate(source, "Source")
+  assert_true(out.contains("fn read(self, id?)"))
+  assert_true(out.contains("Matcher[Option[Int32]]"))
+}
+
+///|
 test "拒绝未支持的签名并标记源码位置" {
   for
     source in [
       "trait Foo : Base { fn f(Self) -> Unit }", "trait Foo { fn[A] f(Self, A) -> A }",
-      "trait Foo { fn f(Self, id~ : Int) -> Int }", "trait Foo { fn f(Self) -> Self }",
+      "trait Foo { fn f(Self) -> Self }",
     ] {
     let result = Ok(@generator.generate(source, "Foo", filename="traits.mbt")) catch {
       @generator.GenerationError(message) => Err(message)
