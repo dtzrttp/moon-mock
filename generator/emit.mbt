@@ -1,0 +1,106 @@
+///|
+fn Signature::arg_type(self : Signature) -> String {
+  match self.args.length() {
+    0 => "Unit"
+    1 => self.args[0]
+    _ => "(" + self.args.join(", ") + ")"
+  }
+}
+
+///|
+fn Signature::effect(self : Signature) -> String {
+  match self.error {
+    Some(error) => " raise " + error
+    None if self.cannot_raise => " noraise"
+    None => ""
+  }
+}
+
+///|
+fn Signature::action_type(self : Signature) -> String {
+  let prefix = if self.async_ { "async " } else { "" }
+  prefix + "(" + self.arg_type() + ") -> " + self.returns + self.effect()
+}
+
+///|
+fn emit_method(
+  out : StringBuilder,
+  mock : String,
+  trait_name : String,
+  shape : Signature,
+) -> Unit {
+  let name = shape.name
+  let slot = "slot_" + name
+  let matcher = "@mock_runtime.Matcher[" + shape.arg_type() + "]"
+  let opts = "times~ : Int32 = 1, sequence? : @mock_runtime.Sequence"
+  let invoke = "self." + slot + ".expect"
+  out.write_string(
+    "\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::expect_\{name}(self : \{mock}, matcher : \{matcher}, value : \{shape.returns}, \{opts}) -> Unit {\n\{invoke}(matcher, _ => value, times~, sequence?)\n}\n",
+  )
+  out.write_string(
+    "\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::respond_\{name}(self : \{mock}, matcher : \{matcher}, action : \{shape.action_type()}, \{opts}) -> Unit {\n\{invoke}(matcher, action, times~, sequence?)\n}\n",
+  )
+  if shape.error is Some(error) {
+    out.write_string(
+      "\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::raise_\{name}(self : \{mock}, matcher : \{matcher}, error : \{error}, \{opts}) -> Unit {\n\{invoke}(matcher, _ => raise error, times~, sequence?)\n}\n",
+    )
+  }
+  let params = Array::makei(shape.args.length(), i => "arg_" + i.to_string())
+  let suffix = if params.is_empty() { "" } else { ", " + params.join(", ") }
+  let args = match params.length() {
+    0 => "()"
+    1 => params[0]
+    _ => "(" + params.join(", ") + ")"
+  }
+  out.write_string(
+    "\n///|\nimpl \{trait_name} for \{mock} with fn \{name}(self\{suffix}) {\n  let args = \{args}\n  let action = self.\{slot}.take(args)\n  action(args)\n}\n",
+  )
+}
+
+///|
+/// 生成同包白盒测试使用的 MoonBit 源码。
+pub fn generate(
+  source : String,
+  trait_name : String,
+  filename~ : String = "<stdin>",
+) -> String raise GenerationError {
+  let signatures = collect(source, trait_name, filename)
+  let out = StringBuilder()
+  let mock = "Mock" + trait_name
+  out.write_string(
+    "// 由 moon-mock 生成，请从原 trait 重新生成。\n\n",
+  )
+  out.write_string("///|\nstruct \{mock} {\n")
+  for shape in signatures {
+    out.write_string(
+      "  slot_\{shape.name} : @mock_runtime.Method[\{shape.arg_type()}, \{shape.action_type()}]\n",
+    )
+  }
+  out.write_string(
+    "}\n\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::new(c : @mock_runtime.Controller) -> \{mock} {\n{\n",
+  )
+  for shape in signatures {
+    out.write_string(
+      "  slot_\{shape.name}: @mock_runtime.Method::new(c, \"\{trait_name}.\{shape.name}\"),\n",
+    )
+  }
+  out.write_string("}\n}\n")
+  for shape in signatures {
+    emit_method(out, mock, trait_name, shape)
+  }
+  let generated = out.to_string()
+  let (_, errors) = @parser.parse_string(generated, parser=Handrolled)
+  if !errors.is_empty() {
+    raise GenerationError(
+      "emitter_error: " + errors.map(report => report.msg).join("; "),
+    )
+  }
+  let formatted = @sourcefmt.format(generated, block_line=true)
+    .trim()
+    .to_owned()
+  formatted
+  .replace_all(old="重新生成。\n///|", new="重新生成。\n\n///|")
+  .replace_all(old="times? : Int32 = 1,", new="times~ : Int32 = 1,")
+  .replace_all(old="=> raise  error", new="=> raise error") +
+  "\n"
+}

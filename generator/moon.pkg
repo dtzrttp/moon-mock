@@ -1,0 +1,7 @@
+import {
+  "moonbitlang/core/list",
+  "moonbitlang/lexer/basic",
+  "moonbitlang/parser",
+  "moonbitlang/parser/fmt" @sourcefmt,
+  "moonbitlang/parser/syntax",
+}

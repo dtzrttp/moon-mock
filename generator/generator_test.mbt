@@ -1,0 +1,54 @@
+///|
+test "只生成指定 trait，保持类型和错误效果" {
+  let source =
+    #|trait Skip { fn skip(Self) -> Unit }
+    #|trait Repository {
+    #|  fn get(Self, String, Int) -> String?
+    #|  fn delete(Self, String) -> Unit raise
+    #|  async fn save(Self, String) -> Unit raise WriteError
+    #|  async fn count(Self) -> Int noraise
+    #|}
+  let out = @generator.generate(source, "Repository")
+  assert_true(out.contains("impl Repository for MockRepository"))
+  assert_true(out.contains("expect_get"))
+  assert_true(out.contains("raise_save"))
+  assert_true(out.contains("raise_delete"))
+  assert_true(out.contains("raise WriteError"))
+  assert_true(out.contains("noraise"))
+  assert_false(out.contains("MockSkip"))
+  assert_false(out.contains("raise_count"))
+  assert_eq(@generator.generate(source, "Repository"), out)
+}
+
+///|
+test "解析错误和不存在的 trait 给出清楚的错误" {
+  for
+    (source, name, expected) in [
+      ("trait Foo {", "Foo", "parse_error"),
+      ("trait Foo {}", "Other", "trait_not_found"),
+    ] {
+    let output = Ok(@generator.generate(source, name, filename="traits.mbt")) catch {
+      @generator.GenerationError(message) => Err(message)
+    }
+    guard output is Err(message) else { fail("应拒绝输入") }
+    assert_true(message.contains(expected))
+    assert_true(message.contains("traits.mbt"))
+  }
+}
+
+///|
+test "拒绝未支持的签名并标记源码位置" {
+  for
+    source in [
+      "trait Foo : Base { fn f(Self) -> Unit }", "trait Foo { fn[A] f(Self, A) -> A }",
+      "trait Foo { fn f(Self, id~ : Int) -> Int }", "trait Foo { fn f(Self) -> Self }",
+      "trait Foo { fn f(Self) -> Int = _ }",
+    ] {
+    let result = Ok(@generator.generate(source, "Foo", filename="traits.mbt")) catch {
+      @generator.GenerationError(message) => Err(message)
+    }
+    guard result is Err(message) else { fail("应拒绝输入：" + source) }
+    assert_true(message.contains("traits.mbt:1:"))
+    assert_true(message.contains("unsupported_signature"))
+  }
+}
