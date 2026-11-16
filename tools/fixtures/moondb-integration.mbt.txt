@@ -1,0 +1,42 @@
+///|
+test "接入 moondb 的事务在语句失败后回滚" {
+  @mock_runtime.with_mock(c => {
+    let mock = GeneratedDriver::new(c)
+    let sequence = @mock_runtime.Sequence::new()
+    mock.expect_begin(@mock_runtime.any(), (), sequence~)
+    mock.raise_execute(
+      @mock_runtime.equal_to(("INSERT INTO jobs VALUES (?)", [Value::Int(42)])),
+      QueryError("写入失败"),
+      sequence~,
+    )
+    mock.expect_rollback(@mock_runtime.any(), (), sequence~)
+    mock.expect_commit(@mock_runtime.any(), (), times=0)
+    let txn = Txn::new(mock)
+    let outcome = Ok(txn.run(tx => {
+      Driver::execute(tx.driver(), "INSERT INTO jobs VALUES (?)", [Value::Int(42)])
+      |> ignore
+    })) catch {
+      error => Err(error)
+    }
+    assert_true(outcome is Err(QueryError("写入失败")))
+    assert_eq(txn.depth(), 0)
+  })
+}
+
+///|
+test "接入 moondb 的默认流式查询返回真实游标" {
+  @mock_runtime.with_mock(c => {
+    let mock = GeneratedDriver::new(c)
+    let row : Row = { columns: ["id"], values: [Value::Int(42)] }
+    mock.expect_query_stream(
+      @mock_runtime.equal_to(("SELECT id FROM jobs", [])),
+      ArrayCursor::new([row]),
+    )
+    mock.expect_query(@mock_runtime.any(), [], times=0)
+    let driver : &Driver = mock
+    let cursor = driver.query_stream("SELECT id FROM jobs", [])
+    assert_eq(cursor.next(), Some(row))
+    assert_true(cursor.next() is None)
+    cursor.close()
+  })
+}
