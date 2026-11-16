@@ -8,18 +8,8 @@ fn Signature::arg_type(self : Signature) -> String {
 }
 
 ///|
-fn Signature::effect(self : Signature) -> String {
-  match self.error {
-    Some(error) => " raise " + error
-    None if self.cannot_raise => " noraise"
-    None => ""
-  }
-}
-
-///|
 fn Signature::action_type(self : Signature) -> String {
-  let prefix = if self.async_ { "async " } else { "" }
-  prefix + "(" + self.arg_type() + ") -> " + self.returns + self.effect()
+  function_type_text(self.arg_type(), self.returns, self.error, self.async_)
 }
 
 ///|

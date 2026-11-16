@@ -20,7 +20,6 @@ priv struct Signature {
   returns : String
   error : String?
   async_ : Bool
-  cannot_raise : Bool
 }
 
 ///|
@@ -55,6 +54,22 @@ fn constructor_name(
 }
 
 ///|
+fn function_type_text(
+  params : String,
+  returns : String,
+  error : String?,
+  async_ : Bool,
+) -> String {
+  let prefix = if async_ { "async " } else { "" }
+  let effect = match error {
+    Some(name) => " raise " + name
+    None if async_ => " noraise"
+    None => ""
+  }
+  prefix + "(" + params + ") -> " + returns + effect
+}
+
+///|
 fn type_text(typ : @syntax.Type, file : String) -> String raise GenerationError {
   match typ {
     Name(constr_id~, tys~, ..) => {
@@ -78,13 +93,45 @@ fn type_text(typ : @syntax.Type, file : String) -> String raise GenerationError 
       }
       "(" + args.join(", ") + ")"
     }
+    Arrow(args~, res~, err~, is_async~, nocancel_~, loc~) => {
+      if nocancel_ is Some(at) {
+        unsupported(file, at, "暂不支持 nocancel 函数类型")
+      }
+      let params = []
+      for arg in args.iter() {
+        params.push(type_text(arg, file))
+      }
+      let async_ = is_async is Some(_)
+      let returns = type_text(res, file)
+      let error = error_type_text(err, async_, file, loc)
+      "(" + function_type_text(params.join(", "), returns, error, async_) + ")"
+    }
     _ => {
       unsupported(
         file,
         typ.loc(),
-        "支持命名类型、类型应用、trait 对象、元组和可选类型",
+        "支持命名类型、类型应用、trait 对象、元组、可选类型和函数类型",
       )
       ""
+    }
+  }
+}
+
+///|
+fn error_type_text(
+  err : @syntax.ErrorType,
+  async_ : Bool,
+  file : String,
+  location : @basic.Location,
+) -> String? raise GenerationError {
+  match err {
+    @syntax.ErrorType(ty~) => Some(type_text(ty, file))
+    DefaultErrorType(_) => Some("Error")
+    NoErrorType if async_ => Some("Error")
+    NoErrorType | Noraise(_) => None
+    MaybeError(_) => {
+      unsupported(file, location, "暂不支持条件错误效果")
+      None
     }
   }
 }
@@ -166,24 +213,13 @@ fn collect_signature(
     None => "Unit"
   }
   let async_ = declared_method.is_async is Some(_)
-  let error = match declared_method.error_type {
-    @syntax.ErrorType(ty~) => Some(type_text(ty, file))
-    DefaultErrorType(_) => Some("Error")
-    NoErrorType if async_ => Some("Error")
-    NoErrorType | Noraise(_) => None
-    MaybeError(_) => {
-      unsupported(file, declared_method.loc, "暂不支持条件错误效果")
-      None
-    }
-  }
-  {
-    name: declared_method.name.name,
-    args,
-    returns,
-    error,
+  let error = error_type_text(
+    declared_method.error_type,
     async_,
-    cannot_raise: async_ && error is None,
-  }
+    file,
+    declared_method.loc,
+  )
+  { name: declared_method.name.name, args, returns, error, async_, }
 }
 
 ///|

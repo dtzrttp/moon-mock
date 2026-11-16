@@ -93,11 +93,24 @@ test "为可省略的标签保留问号和 Option 匹配类型" {
 }
 
 ///|
+test "保留嵌套函数类型的异步和抛错效果" {
+  let source =
+    #|trait Source {
+    #|  fn select(Self, async (Int32) -> Bool noraise) -> (() -> Int32 raise ReadError)?
+    #|}
+  let out = @generator.generate(source, "Source")
+  assert_true(out.contains("async (Int32) -> Bool noraise"))
+  assert_true(out.contains("() -> Int32 raise ReadError"))
+  assert_true(out.contains(")?"))
+  assert_false(out.contains("raise_select"))
+}
+
+///|
 test "拒绝未支持的签名并标记源码位置" {
   for
     source in [
       "trait Foo : Base { fn f(Self) -> Unit }", "trait Foo { fn[A] f(Self, A) -> A }",
-      "trait Foo { fn f(Self) -> Self }",
+      "trait Foo { fn f(Self) -> Self }", "trait Foo { fn f(Self, (Self) -> Unit) -> Unit }",
     ] {
     let result = Ok(@generator.generate(source, "Foo", filename="traits.mbt")) catch {
       @generator.GenerationError(message) => Err(message)

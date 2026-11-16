@@ -22,20 +22,24 @@ writeFileSync(join(sandbox, 'moon.work'), 'members = ["consumer", "dependency"]\
 writeFileSync(join(consumer, 'moon.mod'), [
   'name = "dtzrttp/mock_consumer"',
   'version = "0.1.0"',
-  'import { "dtzrttp/moon-mock@0.1.0" }',
+  'import { "dtzrttp/moon-mock@0.1.0", "moonbitlang/async@0.22.4" }',
   '',
 ].join('\n'));
 writeFileSync(join(consumer, 'moon.pkg'), [
-  'import { "dtzrttp/moon-mock/runtime" @mock_runtime } for "wbtest"',
+  'import { "dtzrttp/moon-mock/runtime" @mock_runtime, "moonbitlang/async" } for "wbtest"',
   '',
 ].join('\n'));
 writeFileSync(join(consumer, 'traits.mbt'), [
   'pub(open) trait Availability { fn available(Self) -> Bool }',
+  'pub suberror ReadError { Offline }',
   'pub(open) trait Catalog {',
   '  fn lookup(Self, Int32) -> (String, Int32)?',
   '  fn status(Self, &Availability) -> &Availability = _',
   '  fn search(Self, String, action~ : Int32, arg_0~ : Int32, self~ : Int32, args~ : Int32) -> Int32',
   '  fn page_size(Self, limit? : Int32) -> Int32',
+  '  fn apply(Self, (Int32) -> Int32, Int32) -> Int32',
+  '  fn fetcher(Self) -> (() -> Int32 raise ReadError)',
+  '  async fn fetch_with(Self, async (Int32) -> Int32 raise ReadError) -> Int32 raise ReadError',
   '}',
   'impl Catalog with fn status(_self, fallback) { fallback }',
   '',
@@ -73,6 +77,35 @@ writeFileSync(join(consumer, 'consumer_wbtest.mbt'), [
   '    assert_eq(catalog.page_size(limit=9), 9)',
   '  })',
   '}',
+  'test "同步签名可接收回调并返回可抛错的函数" {',
+  '  @mock_runtime.with_mock(c => {',
+  '    let mock = MockCatalog::new(c)',
+  '    mock.respond_apply(@mock_runtime.any(), args => {',
+  '      let (callback, number) = args',
+  '      callback(number)',
+  '    })',
+  '    mock.expect_fetcher(@mock_runtime.any(), fn() -> Int32 raise ReadError { raise Offline })',
+  '    assert_eq(Catalog::apply(mock, n => n * 2, 9), 18)',
+  '    let fetch = Catalog::fetcher(mock)',
+  '    let result = Ok(fetch()) catch { error => Err(error) }',
+  '    assert_true(result is Err(Offline))',
+  '  })',
+  '}',
+  'async test "异步业务回调挂起后向调用者传播类型化错误" {',
+  '  @mock_runtime.with_mock_async(async fn(c) {',
+  '    let mock = MockCatalog::new(c)',
+  '    mock.respond_fetch_with(@mock_runtime.any(), async fn(callback) -> Int32 raise ReadError {',
+  '      callback(42)',
+  '    })',
+  '    let read = async fn(number : Int32) -> Int32 raise ReadError {',
+  '      @async.pause()',
+  '      if number == 42 { raise Offline }',
+  '      number',
+  '    }',
+  '    let result = Ok(Catalog::fetch_with(mock, read)) catch { error => Err(error) }',
+  '    assert_true(result is Err(Offline))',
+  '  })',
+  '}',
   '',
 ].join('\n'));
 
@@ -88,5 +121,5 @@ const cli = target === 'js' ? process.execPath : base + '.exe';
 const prefix = target === 'js' ? [base + '.js'] : [];
 run(cli, [...prefix, 'generate', 'traits.mbt', 'Catalog', '--output', 'mock_catalog_wbtest.mbt'], consumer);
 const result = run('moon', ['test', '.', '--target', target, '--deny-warn'], consumer);
-assert.match(result, /Total tests: 3, passed: 3, failed: 0/);
-console.log(target + ' 独立消费方测试 3/3 通过，保留工作区 ' + sandbox);
+assert.match(result, /Total tests: 5, passed: 5, failed: 0/);
+console.log(target + ' 独立消费方测试 5/5 通过，保留工作区 ' + sandbox);
