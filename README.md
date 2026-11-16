@@ -20,7 +20,7 @@ moon run --target native cmd/moon-mock -- generate examples/transaction/transact
 moon test examples/transaction --target native --deny-warn
 ```
 
-省略 `--output` 可把源码写到标准输出。CI 可将其换成 `--check <文件>`，检查已提交的生成物是否过期。输出路径要以 `_wbtest.mbt` 结尾。已有文件须带生成标记才可覆盖。用法或过期检查失败返回 2，读取或生成失败返回 1。
+省略 `--output` 可把源码写到标准输出。CI 可将其换成 `--check <文件>`，检查已提交的生成物是否过期。包内已有同名测试替身时，可加 `--mock-name GeneratedTransaction` 指定类型名。输出路径要以 `_wbtest.mbt` 结尾。已有文件须带生成标记才可覆盖。用法或过期检查失败返回 2，读取或生成失败返回 1。
 
 ## 在测试中使用
 
@@ -66,7 +66,7 @@ test "失败后回滚" {
 | 事务 | 写入失败后回滚，成功时按顺序提交 | `moon test examples/transaction --target js --deny-warn` |
 | 网络传输 | 暂时错误触发重试，异步回调挂起后返回，关闭连接可抛错 | `moon test examples/transport --target js --deny-warn` |
 
-这两个示例使用项目自建的最小依赖接口。Exa SDK 的实际 `Transport` 源码可直接生成，moondb 的 `Driver` 目前会定位并拒绝默认方法。 [真实接口适配](docs/adoption.md) · [查重记录](docs/dedup.md)
+这两个示例使用项目自建的最小依赖接口。生成的替身也在固定版本的 Exa SDK 中通过了真实客户端的离线测试。moondb 的 `Driver` 目前会定位并拒绝带默认实现的方法。 [真实接口适配](docs/adoption.md) · [查重记录](docs/dedup.md)
 
 ## 支持范围
 

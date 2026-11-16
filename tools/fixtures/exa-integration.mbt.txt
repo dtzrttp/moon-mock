@@ -1,0 +1,13 @@
+///|
+async test "生成的替身接入 Exa 客户端，无需联网" {
+  @mock_runtime.with_mock_async(async fn(c) {
+    let mock = GeneratedTransport::new(c)
+    mock.expect_send(
+      @mock_runtime.matching("POST /search", req => req.meth == "POST" && req.url.has_suffix("/search")),
+      { status: 401, headers: [], body: "{\"error\":\"test\",\"tag\":\"INVALID_API_KEY\"}" },
+    )
+    let exa = Client::new(mock, "test-only-example")
+    let result = Ok(exa.search("example")) catch { error => Err(error) }
+    guard result is Err(Api(status=401, ..)) else { fail("客户端没有解析生成 mock 的 401 响应") }
+  })
+}
