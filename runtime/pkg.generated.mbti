@@ -1,0 +1,57 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dtzrttp/moon-mock/runtime"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn[A] any() -> Matcher[A]
+
+pub fn[A : Eq + @debug.Debug] equal_to(A) -> Matcher[A]
+
+pub fn[A] matching(String, (A) -> Bool) -> Matcher[A]
+
+pub fn[T] with_mock((Controller) -> T raise) -> T raise
+
+pub async fn[T] with_mock_async(async (Controller) -> T) -> T
+
+// Errors
+pub suberror VerificationError {
+  VerificationFailed(String)
+} derive(@debug.Debug)
+pub fn VerificationError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub struct CallFailure {
+  code : String
+  message : String
+}
+
+pub struct Controller {
+  // private fields
+}
+pub fn Controller::missing_calls(Self) -> Array[String]
+pub fn Controller::new() -> Self
+pub fn Controller::verify(Self) -> Unit raise VerificationError
+
+pub struct Matcher[A] {
+  // private fields
+}
+
+pub struct Method[A, F] {
+  // private fields
+}
+pub fn[A, F] Method::expect(Self[A, F], Matcher[A], F, times? : Int32, sequence? : Sequence) -> Unit
+pub fn[A, F] Method::new(Controller, String) -> Self[A, F]
+pub fn[A, F] Method::take(Self[A, F], A) -> F
+pub fn[A, F] Method::try_take(Self[A, F], A) -> Result[F, CallFailure]
+
+pub struct Sequence {
+  // private fields
+}
+pub fn Sequence::new() -> Self
+
+// Type aliases
+
+// Traits
