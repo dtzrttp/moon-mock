@@ -1,0 +1,4 @@
+import {
+  "dtzrttp/moon-mock/runtime" @mock_runtime,
+  "moonbitlang/async",
+} for "wbtest"

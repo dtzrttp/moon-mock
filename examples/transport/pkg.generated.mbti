@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dtzrttp/moon-mock/examples/transport"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub async fn[T : Transport] fetch_with_retry(T, String) -> String raise TransportError
+
+// Errors
+pub suberror TransportError {
+  Temporary
+} derive(@debug.Debug)
+pub fn TransportError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+pub(open) trait Transport {
+  async fn fetch(Self, String) -> String raise TransportError
+  async fn is_ready(Self) -> Bool noraise
+  async fn close(Self) -> Unit
+}

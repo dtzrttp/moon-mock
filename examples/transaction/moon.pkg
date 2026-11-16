@@ -1,0 +1,3 @@
+import {
+  "dtzrttp/moon-mock/runtime" @mock_runtime,
+} for "wbtest"

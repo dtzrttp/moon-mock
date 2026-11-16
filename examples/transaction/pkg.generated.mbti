@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dtzrttp/moon-mock/examples/transaction"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn[T : Transaction] transfer(T, String, Int32) -> Unit raise DatabaseError
+
+// Errors
+pub suberror DatabaseError {
+  WriteFailed
+} derive(@debug.Debug)
+pub fn DatabaseError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+pub(open) trait Transaction {
+  fn begin(Self) -> Unit
+  fn insert(Self, String, Int32) -> Unit raise DatabaseError
+  fn commit(Self) -> Unit
+  fn rollback(Self) -> Unit
+}
