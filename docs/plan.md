@@ -19,4 +19,12 @@
 | 4 生态样例和 CI | 数据库事务回滚与 HTTP 重试或任务执行两个独立案例，保留适配前后可比较的代码。CLI 生成后运行 `moon check` 和 `moon test`，检查生成物是否过期，配套中文文档。 |
 | 5 发布 | 验证复现步骤，核对 Apache-2.0 和依赖署名，按阶段记录实质提交。个人提交及远程操作仅用 `dtzrttp`。仓库与申报材料分别处理。 |
 
-阶段 1 验证命令是在探针目录实际执行的 `moon test --target js --deny-warn` 与 `moon test --target native --deny-warn`，均为 2/2。尚未实现生成器、匹配运行库与自动核对。
+阶段 1 验证在探针目录实际执行，JS 与 native 均为 2/2。
+
+## 首版实现核对
+
+- [x] `generator/signatures.mbt` 从官方 AST 提取签名和错误效果并报告不支持的位置。`generator/emit.mbt` 生成同包 mock 和类型化调用配置。
+- [x] `runtime/` 提供参数匹配、控制器作用域、计数、显式顺序及错误报告。测试覆盖取消后关闭作用域，以及避免用验证错误覆盖原错误。
+- [x] `cmd/moon-mock/` 支持标准输出、写文件和检查，与两份生成示例做 CLI 验收。
+- [x] `examples/` 演示事务回滚和异步传输重试。独立 workspace 的消费方验收由 `tools/consumer-smoke.mjs` 复现。
+- [x] `.github/workflows/ci.yml` 配置 JS 和 native 验证。
