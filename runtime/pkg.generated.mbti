@@ -23,6 +23,13 @@ pub suberror VerificationError {
 pub fn VerificationError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub struct CallCount {
+  // private fields
+}
+pub fn CallCount::at_least(Int32) -> Self
+pub fn CallCount::between(Int32, Int32) -> Self
+pub fn CallCount::exact(Int32) -> Self
+
 pub struct CallFailure {
   code : String
   message : String
@@ -42,7 +49,7 @@ pub struct Matcher[A] {
 pub struct Method[A, F] {
   // private fields
 }
-pub fn[A, F] Method::expect(Self[A, F], Matcher[A], F, times? : Int32, sequence? : Sequence) -> Unit
+pub fn[A, F] Method::expect(Self[A, F], Matcher[A], F, times? : Int32, sequence? : Sequence, count? : CallCount) -> Unit
 pub fn[A, F] Method::new(Controller, String) -> Self[A, F]
 pub fn[A, F] Method::take(Self[A, F], A) -> F
 pub fn[A, F] Method::try_take(Self[A, F], A) -> Result[F, CallFailure]

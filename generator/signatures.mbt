@@ -15,6 +15,7 @@ priv struct Argument {
 
 ///|
 priv struct Signature {
+  owner : String
   name : String
   args : Array[Argument]
   returns : String
@@ -179,6 +180,7 @@ fn collect_argument(
 fn collect_signature(
   declared_method : @syntax.TraitMethodDecl,
   file : String,
+  owner : String,
 ) -> Signature raise GenerationError {
   if !(declared_method.quantifiers is @list.Empty) {
     unsupported(file, declared_method.loc, "暂不支持方法泛型")
@@ -219,61 +221,5 @@ fn collect_signature(
     file,
     declared_method.loc,
   )
-  { name: declared_method.name.name, args, returns, error, async_, }
-}
-
-///|
-fn collect(
-  source : String,
-  name : String,
-  file : String,
-) -> Array[Signature] raise GenerationError {
-  let (decls, errors) = @parser.parse_string(
-    source,
-    name=file,
-    parser=Handrolled,
-  )
-  if !errors.is_empty() {
-    let details = errors.map(report => {
-      let at = report.loc.start
-      "\{file}:\{at.lnum}:\{at.column()}: parse_error: \{report.msg}"
-    })
-    raise GenerationError(details.join("\n"))
-  }
-  let mut chosen : @syntax.TraitDecl? = None
-  for entry in decls.iter() {
-    if entry is @syntax.TopTrait(decl) && decl.name.name == name {
-      if chosen is Some(_) {
-        raise GenerationError(file + ": ambiguous_trait: " + name)
-      }
-      chosen = Some(decl)
-    }
-  }
-  guard chosen is Some(decl) else {
-    raise GenerationError(file + ": trait_not_found: " + name)
-  }
-  if !(decl.supers is @list.Empty) ||
-    !(decl.attrs is @list.Empty) ||
-    decl.is_declare ||
-    decl.methods is @list.Empty {
-    unsupported(
-      file,
-      decl.loc,
-      "暂不支持超 trait、声明、属性或空 trait",
-    )
-  }
-  let signatures = []
-  let seen : Map[String, Bool] = Map([])
-  for declared_method in decl.methods.iter() {
-    if seen.contains(declared_method.name.name) {
-      unsupported(
-        file,
-        declared_method.loc,
-        "同一 trait 中的方法名重复",
-      )
-    }
-    seen[declared_method.name.name] = true
-    signatures.push(collect_signature(declared_method, file))
-  }
-  signatures
+  { owner, name: declared_method.name.name, args, returns, error, async_, }
 }

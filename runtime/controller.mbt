@@ -8,7 +8,7 @@ pub struct Controller {
 priv struct Ticket {
   name : String
   description : String
-  times : Int32
+  count : CallCount
   mut seen : Int32
 }
 
@@ -31,9 +31,9 @@ pub extend VerificationError with Debug::{to_repr}
 pub fn Controller::missing_calls(self : Controller) -> Array[String] {
   let missing = []
   for ticket in self.tickets {
-    if ticket.seen < ticket.times {
+    if ticket.seen < ticket.count.minimum {
       missing.push(
-        "missing_calls: \{ticket.name}（\{ticket.description}）预期 \{ticket.times} 次，实际 \{ticket.seen} 次",
+        "missing_calls: \{ticket.name}（\{ticket.description}）预期 \{ticket.count.describe()}，实际 \{ticket.seen} 次",
       )
     }
   }
@@ -86,13 +86,18 @@ pub fn Sequence::new() -> Sequence {
 }
 
 ///|
-fn Sequence::ready(self : Sequence, position : Int32) -> Bool {
-  while self.cursor < self.tickets.length() {
-    let head = self.tickets[self.cursor]
-    if head.seen < head.times {
-      break
-    }
-    self.cursor += 1
+fn Sequence::blocking_message(self : Sequence, position : Int32) -> String? {
+  if position < self.cursor {
+    return Some(
+      " 已越过顺序位置，当前步骤是 " +
+      self.tickets[self.cursor].name,
+    )
   }
-  self.cursor == position
+  for i in self.cursor..<position {
+    let prior = self.tickets[i]
+    if prior.seen < prior.count.minimum {
+      return Some(" 必须等待 " + prior.name)
+    }
+  }
+  None
 }

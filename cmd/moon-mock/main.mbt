@@ -7,6 +7,7 @@ priv suberror UsageError {
 let usage =
   #|用法：
   #|  moon-mock generate <文件.mbt> <Trait> [--mock-name <类型名>]
+  #|      [--source <同包辅助源码.mbt>]...
   #|      [--output <生成文件_wbtest.mbt> | --check <生成文件_wbtest.mbt>]
   #|  moon-mock --help
 
@@ -28,6 +29,14 @@ fn normalized(source : String) -> String {
 }
 
 ///|
+fn read_source(path : String) -> String raise @fs.IOError {
+  @fs.read_file_to_string(path) catch {
+    @fs.IOError(message) =>
+      raise @fs.IOError("source_read_error: \{path}: \{message}")
+  }
+}
+
+///|
 fn run(args : ArrayView[String]) -> Unit raise {
   if args is ["--help"] || args is ["-h"] {
     println(usage)
@@ -41,10 +50,13 @@ fn run(args : ArrayView[String]) -> Unit raise {
   }
   let mut mode : (String, String)? = None
   let mut mock_name : String? = None
+  let extra_files : Array[String] = []
   for i = 0; i < options.length(); i = i + 2 {
     let option = options[i]
     let value = options[i + 1]
     match option {
+      "--source" if !extra_files.contains(value) && value != source_file =>
+        extra_files.push(value)
       "--mock-name" if mock_name is None => mock_name = Some(value)
       "--output" | "--check" if mode is None => mode = Some((option, value))
       _ => raise UsageError("未知、重复或冲突的选项：" + option)
@@ -53,17 +65,27 @@ fn run(args : ArrayView[String]) -> Unit raise {
   if !source_file.has_suffix(".mbt") {
     raise UsageError("输入必须是 .mbt 文件")
   }
-  let source = @fs.read_file_to_string(source_file)
+  let source = read_source(source_file)
+  let additional_sources = []
+  for path in extra_files {
+    if !path.has_suffix(".mbt") {
+      raise UsageError("辅助源码必须是 .mbt 文件：" + path)
+    }
+    additional_sources.push((path, read_source(path)))
+  }
   let generated = @generator.generate(
     source,
     trait_name,
     filename=source_file,
     mock_name?,
+    additional_sources~,
   )
   match mode {
     None => println(generated.trim_end().to_owned())
     Some((option, output)) => {
-      if !output.has_suffix("_wbtest.mbt") || source_file == output {
+      if !output.has_suffix("_wbtest.mbt") ||
+        source_file == output ||
+        extra_files.contains(output) {
         raise UsageError("输出必须是独立的 *_wbtest.mbt 文件")
       }
       if option == "--check" {

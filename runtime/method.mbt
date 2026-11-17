@@ -29,13 +29,14 @@ pub fn[A, F] Method::new(
 }
 
 ///|
-/// 登记一次预期，`times` 默认为 1，可指定同一个顺序组。
+/// 登记预期。默认调用一次，也可用 count 指定调用次数约束。
 pub fn[A, F] Method::expect(
   self : Method[A, F],
   matcher : Matcher[A],
   action : F,
   times~ : Int32 = 1,
   sequence? : Sequence,
+  count? : CallCount,
 ) -> Unit {
   if self.controller.closed {
     abort("scope_closed: " + self.name)
@@ -43,10 +44,17 @@ pub fn[A, F] Method::expect(
   if times < 0 {
     abort("invalid_count: " + self.name + " 的预期次数不能为负数")
   }
+  if count is Some(_) && times != 1 {
+    abort(
+      "invalid_count: " +
+      self.name +
+      " 同时设置了次数范围和非默认精确次数",
+    )
+  }
   let ticket = {
     name: self.name,
     description: matcher.description,
-    times,
+    count: count.unwrap_or(CallCount::exact(times)),
     seen: 0,
   }
   let order = match sequence {
@@ -80,7 +88,7 @@ pub fn[A, F] Method::try_take(
     })
   }
   let mut blocked : String? = None
-  let mut exhausted : Ticket? = None
+  let mut exhausted : (Ticket, Int32)? = None
   let descriptions = []
   let mut actual = ""
   for rule in self.rules {
@@ -91,27 +99,29 @@ pub fn[A, F] Method::try_take(
       }
       continue
     }
-    if rule.ticket.seen >= rule.ticket.times {
-      exhausted = Some(rule.ticket)
+    if rule.ticket.count.maximum is Some(maximum) && rule.ticket.seen >= maximum {
+      exhausted = Some((rule.ticket, maximum))
       continue
     }
-    if rule.order is Some((group, index)) && !group.ready(index) {
-      blocked = Some(group.tickets[group.cursor].name)
-      continue
+    if rule.order is Some((group, index)) {
+      if group.blocking_message(index) is Some(reason) {
+        blocked = Some(reason)
+        continue
+      }
+      group.cursor = index
     }
-    rule.ticket.seen += 1
+    if rule.ticket.seen < 2147483647 {
+      rule.ticket.seen += 1
+    }
     return Ok(rule.action)
   }
   match (blocked, exhausted) {
-    (Some(before), _) =>
-      Err({
-        code: "out_of_order",
-        message: self.name + " 必须等待 " + before,
-      })
-    (None, Some(ticket)) =>
+    (Some(reason), _) =>
+      Err({ code: "out_of_order", message: self.name + reason, })
+    (None, Some((ticket, maximum))) =>
       Err({
         code: "too_many_calls",
-        message: "\{self.name}（\{ticket.description}）已达到 \{ticket.times} 次上限",
+        message: "\{self.name}（\{ticket.description}）已达到 \{maximum} 次上限",
       })
     _ =>
       Err({

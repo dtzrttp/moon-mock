@@ -109,8 +109,8 @@ test "保留嵌套函数类型的异步和抛错效果" {
 test "拒绝未支持的签名并标记源码位置" {
   for
     source in [
-      "trait Foo : Base { fn f(Self) -> Unit }", "trait Foo { fn[A] f(Self, A) -> A }",
-      "trait Foo { fn f(Self) -> Self }", "trait Foo { fn f(Self, (Self) -> Unit) -> Unit }",
+      "trait Foo { fn[A] f(Self, A) -> A }", "trait Foo { fn f(Self) -> Self }",
+      "trait Foo { fn f(Self, (Self) -> Unit) -> Unit }",
     ] {
     let result = Ok(@generator.generate(source, "Foo", filename="traits.mbt")) catch {
       @generator.GenerationError(message) => Err(message)

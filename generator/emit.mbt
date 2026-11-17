@@ -22,26 +22,22 @@ fn positional_name(base : String, labels : Array[String]) -> String {
 }
 
 ///|
-fn emit_method(
-  out : StringBuilder,
-  mock : String,
-  trait_name : String,
-  shape : Signature,
-) -> Unit {
+fn emit_method(out : StringBuilder, mock : String, shape : Signature) -> Unit {
+  let trait_name = shape.owner
   let name = shape.name
   let slot = "slot_" + name
   let matcher = "@mock_runtime.Matcher[" + shape.arg_type() + "]"
-  let opts = "times~ : Int32 = 1, sequence? : @mock_runtime.Sequence"
+  let opts = "times~ : Int32 = 1, sequence? : @mock_runtime.Sequence, count? : @mock_runtime.CallCount"
   let invoke = "self." + slot + ".expect"
   out.write_string(
-    "\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::expect_\{name}(self : \{mock}, matcher : \{matcher}, value : \{shape.returns}, \{opts}) -> Unit {\n\{invoke}(matcher, _ => value, times~, sequence?)\n}\n",
+    "\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::expect_\{name}(self : \{mock}, matcher : \{matcher}, value : \{shape.returns}, \{opts}) -> Unit {\n\{invoke}(matcher, _ => value, times~, sequence?, count?)\n}\n",
   )
   out.write_string(
-    "\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::respond_\{name}(self : \{mock}, matcher : \{matcher}, action : \{shape.action_type()}, \{opts}) -> Unit {\n\{invoke}(matcher, action, times~, sequence?)\n}\n",
+    "\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::respond_\{name}(self : \{mock}, matcher : \{matcher}, action : \{shape.action_type()}, \{opts}) -> Unit {\n\{invoke}(matcher, action, times~, sequence?, count?)\n}\n",
   )
   if shape.error is Some(error) {
     out.write_string(
-      "\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::raise_\{name}(self : \{mock}, matcher : \{matcher}, error : \{error}, \{opts}) -> Unit {\n\{invoke}(matcher, _ => raise error, times~, sequence?)\n}\n",
+      "\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::raise_\{name}(self : \{mock}, matcher : \{matcher}, error : \{error}, \{opts}) -> Unit {\n\{invoke}(matcher, _ => raise error, times~, sequence?, count?)\n}\n",
     )
   }
   let labels = shape.args.filter_map(arg => arg.label)
@@ -89,11 +85,13 @@ fn valid_type_name(name : String) -> Bool {
 
 ///|
 /// 生成同包白盒测试使用的 MoonBit 源码。
+/// 辅助源码按（文件名，源码）传入，可用于解析同包的超 trait。
 pub fn generate(
   source : String,
   trait_name : String,
   filename~ : String = "<stdin>",
   mock_name? : String,
+  additional_sources~ : Array[(String, String)] = [],
 ) -> String raise GenerationError {
   let mock = mock_name.unwrap_or("Mock" + trait_name)
   if mock_name is Some(_) && !valid_type_name(mock) {
@@ -101,13 +99,13 @@ pub fn generate(
       filename + ": invalid_mock_name: 生成类型名应以大写字母开头",
     )
   }
-  let signatures = collect(source, trait_name, filename)
+  let hierarchy = collect(source, trait_name, filename, additional_sources)
   let out = StringBuilder()
   out.write_string(
     "// 由 moon-mock 生成，请从原 trait 重新生成。\n\n",
   )
   out.write_string("///|\nstruct \{mock} {\n")
-  for shape in signatures {
+  for shape in hierarchy.methods {
     out.write_string(
       "  slot_\{shape.name} : @mock_runtime.Method[\{shape.arg_type()}, \{shape.action_type()}]\n",
     )
@@ -115,14 +113,17 @@ pub fn generate(
   out.write_string(
     "}\n\n///|\n#warnings(\"-unused_value\")\nfn \{mock}::new(c : @mock_runtime.Controller) -> \{mock} {\n{\n",
   )
-  for shape in signatures {
+  for shape in hierarchy.methods {
     out.write_string(
-      "  slot_\{shape.name}: @mock_runtime.Method::new(c, \"\{trait_name}.\{shape.name}\"),\n",
+      "  slot_\{shape.name}: @mock_runtime.Method::new(c, \"\{shape.owner}.\{shape.name}\"),\n",
     )
   }
   out.write_string("}\n}\n")
-  for shape in signatures {
-    emit_method(out, mock, trait_name, shape)
+  for shape in hierarchy.methods {
+    emit_method(out, mock, shape)
+  }
+  for name in hierarchy.empty_traits {
+    out.write_string("\n///|\nimpl \{name} for \{mock}\n")
   }
   let generated = out.to_string()
   let (_, errors) = @parser.parse_string(generated, parser=Handrolled)

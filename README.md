@@ -58,9 +58,27 @@ test "失败后回滚" {
 - `any()` 接受任意参数，`equal_to(value)` 用 `Eq` 判断并用 `Debug` 展示实际值，`matching(描述, 谓词)` 可匹配不实现 `Eq` 的类型。零个参数以 `Unit` 表示，多个参数组成元组。
 - 方法参数是函数时，可以用 `any()` 接收回调，再在 `respond_*` 中用测试数据调用它。方法返回函数时，可以在 `expect_*` 中提供测试用的函数。
 - 标签参数在调用处沿用原名，匹配器和回调按 trait 声明顺序接收值。例如 `fn find(Self, String, limit? : Int32) -> Int32` 的匹配值是 `("书", Some(10))`，省略 `limit` 时是 `("书", None)`。
-- `times` 默认为 1。指定 `Sequence` 后，同组按登记顺序匹配。调用开始时计数，异步回调挂起不改变顺序。可匹配多个预期时先选择最早登记、还有次数且顺序允许的预期。
+- `times` 默认为 1，也可用 `count` 指定 `CallCount::between(min, max)` 或 `CallCount::at_least(min)`。使用 `count` 时，`times` 保持默认值。顺序组中，前一步达到下限后允许进入下一步，下一步一旦匹配就不能回到前一步。调用开始时计数，异步回调挂起不会改变顺序。可匹配多个预期时优先选择最早登记、尚有余量且顺序允许的预期。
 - `with_mock` 和 `with_mock_async` 在测试体正常返回时核对遗漏调用。测试体的抛错或取消直接传播。意外调用立即失败，避免在 `noraise` 方法中返回伪造值或抛出 trait 外的错误。需要手动检查时可使用控制器的 `verify()` 或 `missing_calls()`。
 - 应在异步作用域内等待所有使用 mock 的任务完成。参数谓词应无副作用。不同测试各用自己的控制器。
+
+## 从同包的多个文件生成继承 mock
+
+目标 trait 在第一个文件中声明。可以重复传入 `--source` 补充同包父 trait 的源文件。生成的类型实现整个继承链，共用祖先只登记一次预期。
+
+```sh
+moon-mock generate service.mbt Service \
+  --source branch_traits.mbt \
+  --source base_traits.mbt \
+  --output mock_service_wbtest.mbt
+```
+
+例如，测试最多允许一次就绪探测，读取操作至少执行两次。
+
+```moonbit
+mock.expect_ready(@mock_runtime.any(), true, count=@mock_runtime.CallCount::between(0, 1))
+mock.expect_lookup(@mock_runtime.equal_to(42), "book", count=@mock_runtime.CallCount::at_least(2))
+```
 
 ## 可运行示例
 
@@ -73,7 +91,7 @@ test "失败后回滚" {
 
 ## 支持范围
 
-生成器支持同包的 `Self` 接收者方法，覆盖位置参数、必填与可省略的标签参数、命名类型、泛型类型应用、`&Trait` 对象、可选类型、元组及函数类型。同步和异步方法可具有默认实现。方法与嵌套函数类型各自保留同步或异步语义以及抛错效果，支持具体或通用错误类型、异步默认错误和 `noraise`。签名中的类型需要能在同包测试中解析。方法泛型、超 trait、条件错误、`nocancel` 和跨包 trait 生成属于后续范围。未支持的签名会报告源码位置。
+生成器支持同包的 `Self` 接收者方法，覆盖位置参数、必填与可省略的标签参数、命名类型、泛型类型应用、`&Trait` 对象、可选类型、元组及函数类型。同步和异步方法可具有默认实现。方法与嵌套函数类型各自保留同步或异步语义以及抛错效果，支持具体或通用错误类型、异步默认错误和 `noraise`。签名中的类型需要能在同包测试中解析。支持从同包多份源码解析超 trait。循环、缺失或重复声明，以及继承链中不同 trait 声明的同名方法会报告源码位置。方法泛型、条件错误、`nocancel` 和跨包 trait 生成属于后续范围。
 
 ## 验证与许可
 

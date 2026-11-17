@@ -6,7 +6,7 @@ import {
 }
 
 // Values
-pub fn generate(String, String, filename? : String, mock_name? : String) -> String raise GenerationError
+pub fn generate(String, String, filename? : String, mock_name? : String, additional_sources? : Array[(String, String)]) -> String raise GenerationError
 
 // Errors
 pub suberror GenerationError {

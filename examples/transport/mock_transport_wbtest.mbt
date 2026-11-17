@@ -28,8 +28,9 @@ fn MockTransport::expect_fetch(
   value : String,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_fetch.expect(matcher, _ => value, times~, sequence?)
+  self.slot_fetch.expect(matcher, _ => value, times~, sequence?, count?)
 }
 
 ///|
@@ -40,8 +41,9 @@ fn MockTransport::respond_fetch(
   action : async (String) -> String raise TransportError,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_fetch.expect(matcher, action, times~, sequence?)
+  self.slot_fetch.expect(matcher, action, times~, sequence?, count?)
 }
 
 ///|
@@ -52,8 +54,9 @@ fn MockTransport::raise_fetch(
   error : TransportError,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_fetch.expect(matcher, _ => raise error, times~, sequence?)
+  self.slot_fetch.expect(matcher, _ => raise error, times~, sequence?, count?)
 }
 
 ///|
@@ -71,8 +74,9 @@ fn MockTransport::expect_is_ready(
   value : Bool,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_is_ready.expect(matcher, _ => value, times~, sequence?)
+  self.slot_is_ready.expect(matcher, _ => value, times~, sequence?, count?)
 }
 
 ///|
@@ -83,8 +87,9 @@ fn MockTransport::respond_is_ready(
   action : async (Unit) -> Bool noraise,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_is_ready.expect(matcher, action, times~, sequence?)
+  self.slot_is_ready.expect(matcher, action, times~, sequence?, count?)
 }
 
 ///|
@@ -102,8 +107,9 @@ fn MockTransport::expect_close(
   value : Unit,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_close.expect(matcher, _ => value, times~, sequence?)
+  self.slot_close.expect(matcher, _ => value, times~, sequence?, count?)
 }
 
 ///|
@@ -114,8 +120,9 @@ fn MockTransport::respond_close(
   action : async (Unit) -> Unit raise Error,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_close.expect(matcher, action, times~, sequence?)
+  self.slot_close.expect(matcher, action, times~, sequence?, count?)
 }
 
 ///|
@@ -126,8 +133,9 @@ fn MockTransport::raise_close(
   error : Error,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_close.expect(matcher, _ => raise error, times~, sequence?)
+  self.slot_close.expect(matcher, _ => raise error, times~, sequence?, count?)
 }
 
 ///|

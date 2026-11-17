@@ -30,8 +30,9 @@ fn MockTransaction::expect_begin(
   value : Unit,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_begin.expect(matcher, _ => value, times~, sequence?)
+  self.slot_begin.expect(matcher, _ => value, times~, sequence?, count?)
 }
 
 ///|
@@ -42,8 +43,9 @@ fn MockTransaction::respond_begin(
   action : (Unit) -> Unit,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_begin.expect(matcher, action, times~, sequence?)
+  self.slot_begin.expect(matcher, action, times~, sequence?, count?)
 }
 
 ///|
@@ -61,8 +63,9 @@ fn MockTransaction::expect_insert(
   value : Unit,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_insert.expect(matcher, _ => value, times~, sequence?)
+  self.slot_insert.expect(matcher, _ => value, times~, sequence?, count?)
 }
 
 ///|
@@ -73,8 +76,9 @@ fn MockTransaction::respond_insert(
   action : ((String, Int32)) -> Unit raise DatabaseError,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_insert.expect(matcher, action, times~, sequence?)
+  self.slot_insert.expect(matcher, action, times~, sequence?, count?)
 }
 
 ///|
@@ -85,8 +89,9 @@ fn MockTransaction::raise_insert(
   error : DatabaseError,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_insert.expect(matcher, _ => raise error, times~, sequence?)
+  self.slot_insert.expect(matcher, _ => raise error, times~, sequence?, count?)
 }
 
 ///|
@@ -104,8 +109,9 @@ fn MockTransaction::expect_commit(
   value : Unit,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_commit.expect(matcher, _ => value, times~, sequence?)
+  self.slot_commit.expect(matcher, _ => value, times~, sequence?, count?)
 }
 
 ///|
@@ -116,8 +122,9 @@ fn MockTransaction::respond_commit(
   action : (Unit) -> Unit,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_commit.expect(matcher, action, times~, sequence?)
+  self.slot_commit.expect(matcher, action, times~, sequence?, count?)
 }
 
 ///|
@@ -135,8 +142,9 @@ fn MockTransaction::expect_rollback(
   value : Unit,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_rollback.expect(matcher, _ => value, times~, sequence?)
+  self.slot_rollback.expect(matcher, _ => value, times~, sequence?, count?)
 }
 
 ///|
@@ -147,8 +155,9 @@ fn MockTransaction::respond_rollback(
   action : (Unit) -> Unit,
   times~ : Int32 = 1,
   sequence? : @mock_runtime.Sequence,
+  count? : @mock_runtime.CallCount,
 ) -> Unit {
-  self.slot_rollback.expect(matcher, action, times~, sequence?)
+  self.slot_rollback.expect(matcher, action, times~, sequence?, count?)
 }
 
 ///|

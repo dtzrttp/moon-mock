@@ -33,6 +33,17 @@ for (const [stem, name] of [['transaction', 'Transaction'], ['transport', 'Trans
     '--check', 'examples/' + stem + '/mock_' + stem + '_wbtest.mbt');
 }
 
+const service = 'tools/fixtures/consumer/service.mbt';
+const branch = 'tools/fixtures/consumer/branch_traits.mbt';
+const parent = 'tools/fixtures/consumer/base_traits.mbt';
+const generateService = ['generate', service, 'Service'];
+assert.match(run(1, ...generateService).stderr, /supertrait_not_found: Endpoint|supertrait_not_found: Reader/);
+assert.match(run(2, ...generateService, '--source', service).stderr, /重复或冲突/);
+assert.match(run(2, ...generateService, '--source', 'README.md').stderr, /辅助源码必须是/);
+assert.match(run(1, ...generateService, '--source', 'missing.mbt').stderr, /source_read_error: missing\.mbt/);
+assert.match(run(0, ...generateService, '--source', branch, '--source', parent).stdout,
+  /impl Reader for MockService with fn lookup/);
+
 const scratch = mkdtempSync(join(tmpdir(), 'moon-mock-smoke-'));
 const fixture = join(scratch, 'mock_transaction_wbtest.mbt');
 try {
@@ -54,4 +65,4 @@ try {
   try { unlinkSync(fixture); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   rmdirSync(scratch);
 }
-console.log(target + ' CLI 实际执行 13 个命令，覆盖生成、名称配置、错误、过期文件与覆盖保护。');
+console.log(target + ' CLI 实际执行 18 个命令，覆盖生成、名称配置、错误、过期文件与覆盖保护。');
