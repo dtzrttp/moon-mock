@@ -84,4 +84,4 @@ node tools/package-smoke.mjs js
 node tools/package-smoke.mjs native
 ```
 
-脚本检查 ZIP 的源码、许可证及路径，解压到新的临时目录，再从发行包构建 CLI 并在全新消费模块执行九项接入测试。该流程使用工作区解析本地发行包，公开注册表的下载与发布另行记录。
+脚本检查 ZIP 的源码、许可证及路径，解压到新的临时目录，再从发行包构建 CLI 并在全新消费模块执行九项接入测试。native 流程还通过 `moon install ./cmd/moon-mock --bin <临时目录>` 验证安装产物可执行。该流程使用工作区解析本地发行包，公开注册表的下载与发布另行记录。

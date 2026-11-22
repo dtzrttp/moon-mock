@@ -11,3 +11,21 @@ async test "生成的替身接入 Exa 客户端，无需联网" {
     guard result is Err(Api(status=401, ..)) else { fail("客户端没有解析生成 mock 的 401 响应") }
   })
 }
+
+///|
+async test "接入 Exa 的成功响应保留 Unicode 查询和请求编号" {
+  @mock_runtime.with_mock_async(async fn(c) {
+    let mock = GeneratedTransport::new(c)
+    let requests : @mock_runtime.Capture[HttpRequest] = @mock_runtime.Capture::new()
+    mock.expect_send(
+      requests.matcher(@mock_runtime.matching("POST /search", req => req.meth == "POST" && req.url.has_suffix("/search"))),
+      { status: 200, headers: [], body: "{\"requestId\":\"offline-test\",\"results\":[]}" },
+    )
+    let client = Client::new(mock, "test-only-example")
+    let response = client.search("中文与🌙")
+    assert_eq(response.request_id, Some("offline-test"))
+    assert_eq(response.results.length(), 0)
+    assert_eq(requests.values().length(), 1)
+    assert_true(requests.values()[0].body.contains("中文与"))
+  })
+}

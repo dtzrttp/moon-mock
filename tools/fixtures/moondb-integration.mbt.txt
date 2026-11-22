@@ -40,3 +40,69 @@ test "接入 moondb 的默认流式查询返回真实游标" {
     cursor.close()
   })
 }
+
+///|
+async test "接入 moondb 的真实 AsyncTxn 在写入错误后回滚" {
+  @mock_runtime.with_mock_async(async fn(c) {
+    let mock = GeneratedAsyncDriver::new(c)
+    let sequence = @mock_runtime.Sequence::new()
+    mock.expect_begin(@mock_runtime.any(), (), sequence~)
+    mock.raise_execute(@mock_runtime.any(), QueryError("异步写入失败"), sequence~)
+    mock.expect_rollback(@mock_runtime.any(), (), sequence~)
+    mock.expect_commit(@mock_runtime.any(), (), times=0)
+    let txn = AsyncTxn::new(mock)
+    let outcome = Ok(txn.run(async fn(tx) -> Unit raise DbError {
+      AsyncDriver::execute(tx.driver(), "INSERT INTO jobs VALUES (?)", [Value::Int(42)])
+      |> ignore
+    })) catch {
+      error => Err(error)
+    }
+    assert_true(outcome is Err(QueryError("异步写入失败")))
+    assert_eq(txn.depth(), 0)
+  })
+}
+
+///|
+test "接入 moondb 的 Driver 返回生成的 Stmt 完成绑定执行和释放" {
+  @mock_runtime.with_mock(c => {
+    let driver = GeneratedDriver::new(c)
+    let statement = GeneratedStmt::new(c)
+    let sequence = @mock_runtime.Sequence::new()
+    driver.expect_prepare(@mock_runtime.equal_to("INSERT INTO jobs VALUES (?)"), statement, sequence~)
+    statement.expect_bind(@mock_runtime.equal_to([Value::Int(42)]), (), sequence~)
+    statement.expect_execute(@mock_runtime.any(), { rows_affected: 1, last_insert_id: 42 }, sequence~)
+    statement.expect_close(@mock_runtime.any(), (), sequence~)
+    let prepared = Driver::prepare(driver, "INSERT INTO jobs VALUES (?)")
+    prepared.bind([Value::Int(42)])
+    let result = prepared.execute()
+    assert_eq(result.rows_affected, 1)
+    assert_eq(result.last_insert_id, 42)
+    prepared.close()
+  })
+}
+
+///|
+test "接入 moondb 的嵌套事务只回滚保存点并允许外层提交" {
+  @mock_runtime.with_mock(c => {
+    let driver = GeneratedDriver::new(c)
+    let sequence = @mock_runtime.Sequence::new()
+    let result : ExecResult = { rows_affected: 0, last_insert_id: 0 }
+    driver.expect_begin(@mock_runtime.any(), (), sequence~)
+    driver.expect_execute(@mock_runtime.equal_to(("SAVEPOINT moondb_sp_1", [])), result, sequence~)
+    driver.expect_execute(@mock_runtime.equal_to(("ROLLBACK TO SAVEPOINT moondb_sp_1", [])), result, sequence~)
+    driver.expect_execute(@mock_runtime.equal_to(("RELEASE SAVEPOINT moondb_sp_1", [])), result, sequence~)
+    driver.expect_commit(@mock_runtime.any(), (), sequence~)
+    driver.expect_rollback(@mock_runtime.any(), (), times=0)
+    let txn = Txn::new(driver)
+    let caught_inner = Ref(false)
+    let inner_depth = Ref(0)
+    txn.run(tx => {
+      let inner = Ok(tx.run(_ => raise QueryError("内层失败"))) catch { error => Err(error) }
+      caught_inner.val = inner is Err(QueryError("内层失败"))
+      inner_depth.val = tx.depth()
+    })
+    assert_true(caught_inner.val)
+    assert_eq(inner_depth.val, 1)
+    assert_eq(txn.depth(), 0)
+  })
+}

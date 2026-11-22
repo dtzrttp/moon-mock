@@ -54,5 +54,5 @@ const hierarchy = [
 run(cli, [...prefix, ...hierarchy, '--output', 'mock_service_wbtest.mbt'], consumer);
 run(cli, [...prefix, ...hierarchy, '--check', 'mock_service_wbtest.mbt'], consumer);
 const result = run('moon', ['test', '.', '--target', target, '--deny-warn'], consumer);
-assert.match(result, /Total tests: 8, passed: 8, failed: 0/);
-console.log(target + ' 独立消费方测试 8/8 通过，保留工作区 ' + sandbox);
+assert.match(result, /Total tests: 9, passed: 9, failed: 0/);
+console.log(target + ' 独立消费方测试 9/9 通过，保留工作区 ' + sandbox);
