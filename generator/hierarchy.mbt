@@ -68,7 +68,7 @@ priv struct HierarchyWalk {
   index : Map[String, Array[TraitSource]]
   active : Array[String]
   collected : Map[String, Bool]
-  owners : Map[String, String]
+  owners : Map[String, (String, String)]
   result : Hierarchy
 }
 
@@ -86,6 +86,11 @@ fn HierarchyWalk::visit(
   if self.active.contains(name) {
     let path = self.active.join(" -> ") + " -> " + name
     raise GenerationError("\{reference}: trait_cycle: " + path)
+  }
+  if self.active.length() >= 128 {
+    raise GenerationError(
+      "\{reference}: resource_limit: 继承深度最多 128 层",
+    )
   }
   if declaration.is_declare || !(declaration.attrs is @list.Empty) {
     unsupported(
@@ -117,13 +122,14 @@ fn HierarchyWalk::visit(
   }
   for declared_method in declaration.methods.iter() {
     let method_name = declared_method.name.name
-    if self.owners.get(method_name) is Some(other) {
-      let at = declared_method.loc.start
+    let at = declared_method.loc.start
+    let site = "\{filename}:\{at.lnum}:\{at.column()}"
+    if self.owners.get(method_name) is Some((other, previous_site)) {
       raise GenerationError(
-        "\{filename}:\{at.lnum}:\{at.column()}: method_conflict: \{other}.\{method_name} 与 \{name}.\{method_name} 同名",
+        "\{site}: method_conflict: \{other}.\{method_name}（\{previous_site}）与 \{name}.\{method_name}（\{site}）同名",
       )
     }
-    self.owners[method_name] = name
+    self.owners[method_name] = (name, site)
     self.result.methods.push(collect_signature(declared_method, filename, name))
   }
   self.active.pop() |> ignore

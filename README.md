@@ -93,6 +93,8 @@ mock.expect_lookup(@mock_runtime.equal_to(42), "book", count=@mock_runtime.CallC
 
 生成器支持同包的 `Self` 接收者方法，覆盖位置参数、必填与可省略的标签参数、命名类型、泛型类型应用、`&Trait` 对象、可选类型、元组及函数类型。同步和异步方法可具有默认实现。方法与嵌套函数类型各自保留同步或异步语义以及抛错效果，支持具体或通用错误类型、异步默认错误和 `noraise`。签名中的类型需要能在同包测试中解析。支持从同包多份源码解析超 trait。循环、缺失或重复声明，以及继承链中不同 trait 声明的同名方法会报告源码位置。方法泛型、条件错误、`nocancel` 和跨包 trait 生成属于后续范围。
 
+匹配器支持 `and_`、`or_`、`not_`、`project` 和 `one_of`。通过 `Capture::matcher` 可以记录成功选中的调用参数。控制器提供不可变计数快照及带版本的 JSON 报告。继承冲突会同时定位两个声明，继承深度上限为 128 层。完整生成、预期配置、异步生命周期与 CI 过程见 [使用指南](docs/usage.md)。
+
 ## 验证与许可
 
 CI 检查格式、静态检查、生成文件是否过期、JS/native 测试和 CLI 构建。构建后执行 `node tools/cli-smoke.mjs js` 和 `node tools/cli-smoke.mjs native` 验收 CLI。`node tools/consumer-smoke.mjs js` 和 `node tools/consumer-smoke.mjs native` 验证另一个 MoonBit 模块从生成到运行的流程。项目采用 Apache-2.0。 [来源与依赖许可](NOTICE.md)

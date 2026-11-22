@@ -38,18 +38,48 @@ pub fn[A, F] Method::expect(
   sequence? : Sequence,
   count? : CallCount,
 ) -> Unit {
+  match self.try_expect(matcher, action, times~, sequence?, count?) {
+    Ok(_) => ()
+    Err(error) => abort(error.code + ": " + error.message)
+  }
+}
+
+///|
+/// 登记失败时返回诊断，控制器和顺序组保持原状。
+pub fn[A, F] Method::try_expect(
+  self : Method[A, F],
+  matcher : Matcher[A],
+  action : F,
+  times~ : Int32 = 1,
+  sequence? : Sequence,
+  count? : CallCount,
+) -> Result[Unit, CallFailure] {
   if self.controller.closed {
-    abort("scope_closed: " + self.name)
+    return Err({
+      code: "scope_closed",
+      message: self.name + " 的测试作用域已关闭",
+    })
   }
   if times < 0 {
-    abort("invalid_count: " + self.name + " 的预期次数不能为负数")
+    return Err({
+      code: "invalid_count",
+      message: self.name + " 的预期次数不能为负数",
+    })
   }
   if count is Some(_) && times != 1 {
-    abort(
-      "invalid_count: " +
-      self.name +
+    return Err({
+      code: "invalid_count",
+      message: self.name +
       " 同时设置了次数范围和非默认精确次数",
-    )
+    })
+  }
+  if sequence is Some(group) &&
+    group.owner is Some(owner) &&
+    !physical_equal(owner, self.controller) {
+    return Err({
+      code: "sequence_controller_mismatch",
+      message: self.name + " 的顺序组已属于另一个控制器",
+    })
   }
   let ticket = {
     name: self.name,
@@ -59,6 +89,7 @@ pub fn[A, F] Method::expect(
   }
   let order = match sequence {
     Some(group) => {
+      group.owner = Some(self.controller)
       let position = group.tickets.length()
       group.tickets.push(ticket)
       Some((group, position))
@@ -67,6 +98,7 @@ pub fn[A, F] Method::expect(
   }
   self.controller.tickets.push(ticket)
   self.rules.push({ matcher, action, ticket, order, })
+  Ok(())
 }
 
 ///|
@@ -90,12 +122,12 @@ pub fn[A, F] Method::try_take(
   let mut blocked : String? = None
   let mut exhausted : (Ticket, Int32)? = None
   let descriptions = []
-  let mut actual = ""
+  let mut actual_renderer : ((A) -> String)? = None
   for rule in self.rules {
     if !(rule.matcher.accepts)(args) {
       descriptions.push(rule.matcher.description)
-      if actual.is_empty() && rule.matcher.describe_actual is Some(render) {
-        actual = "，实际参数 " + render(args)
+      if actual_renderer is None {
+        actual_renderer = rule.matcher.describe_actual
       }
       continue
     }
@@ -113,6 +145,7 @@ pub fn[A, F] Method::try_take(
     if rule.ticket.seen < 2147483647 {
       rule.ticket.seen += 1
     }
+    rule.matcher.selected(args)
     return Ok(rule.action)
   }
   match (blocked, exhausted) {
@@ -123,7 +156,11 @@ pub fn[A, F] Method::try_take(
         code: "too_many_calls",
         message: "\{self.name}（\{ticket.description}）已达到 \{maximum} 次上限",
       })
-    _ =>
+    _ => {
+      let actual = match actual_renderer {
+        Some(render) => "，实际参数 " + render(args)
+        None => ""
+      }
       Err({
         code: "argument_mismatch",
         message: self.name +
@@ -131,6 +168,7 @@ pub fn[A, F] Method::try_take(
         descriptions.join("、") +
         actual,
       })
+    }
   }
 }
 

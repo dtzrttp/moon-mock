@@ -14,19 +14,46 @@ pub fn CallCount::exact(times : Int32) -> CallCount {
 ///|
 /// 含上下限的区间。下限必须非负，且不能超过上限。
 pub fn CallCount::between(minimum : Int32, maximum : Int32) -> CallCount {
-  if minimum < 0 || maximum < minimum {
-    abort("invalid_count: 需要满足 0 <= 最少次数 <= 最多次数")
+  match CallCount::try_between(minimum, maximum) {
+    Ok(count) => count
+    Err(error) => abort(error.code + ": " + error.message)
   }
-  { minimum, maximum: Some(maximum), }
 }
 
 ///|
 /// 只设下限，例如测试允许额外的重试调用。
 pub fn CallCount::at_least(minimum : Int32) -> CallCount {
-  if minimum < 0 {
-    abort("invalid_count: 最少次数不能为负数")
+  match CallCount::try_at_least(minimum) {
+    Ok(count) => count
+    Err(error) => abort(error.code + ": " + error.message)
   }
-  { minimum, maximum: None, }
+}
+
+///|
+pub fn CallCount::try_between(
+  minimum : Int32,
+  maximum : Int32,
+) -> Result[CallCount, CallFailure] {
+  if minimum < 0 || maximum < minimum {
+    return Err({
+      code: "invalid_count",
+      message: "需要满足 0 <= 最少次数 <= 最多次数",
+    })
+  }
+  Ok({ minimum, maximum: Some(maximum), })
+}
+
+///|
+pub fn CallCount::try_at_least(
+  minimum : Int32,
+) -> Result[CallCount, CallFailure] {
+  if minimum < 0 {
+    return Err({
+      code: "invalid_count",
+      message: "最少次数不能为负数",
+    })
+  }
+  Ok({ minimum, maximum: None, })
 }
 
 ///|

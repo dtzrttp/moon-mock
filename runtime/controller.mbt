@@ -77,12 +77,13 @@ pub async fn[T] with_mock_async(body : async (Controller) -> T) -> T {
 pub struct Sequence {
   priv tickets : Array[Ticket]
   priv mut cursor : Int32
+  priv mut owner : Controller?
 }
 
 ///|
 /// 组内预期按登记顺序匹配。独立顺序组可以交错执行。
 pub fn Sequence::new() -> Sequence {
-  { tickets: [], cursor: 0, }
+  { tickets: [], cursor: 0, owner: None, }
 }
 
 ///|

@@ -12,6 +12,8 @@ pub fn[A : Eq + @debug.Debug] equal_to(A) -> Matcher[A]
 
 pub fn[A] matching(String, (A) -> Bool) -> Matcher[A]
 
+pub fn[A : Eq + @debug.Debug] one_of(Array[A]) -> Matcher[A]
+
 pub fn[T] with_mock((Controller) -> T raise) -> T raise
 
 pub async fn[T] with_mock_async(async (Controller) -> T) -> T
@@ -29,22 +31,48 @@ pub struct CallCount {
 pub fn CallCount::at_least(Int32) -> Self
 pub fn CallCount::between(Int32, Int32) -> Self
 pub fn CallCount::exact(Int32) -> Self
+pub fn CallCount::try_at_least(Int32) -> Result[Self, CallFailure]
+pub fn CallCount::try_between(Int32, Int32) -> Result[Self, CallFailure]
 
 pub struct CallFailure {
   code : String
   message : String
 }
 
+pub struct Capture[A] {
+  // private fields
+}
+pub fn[A] Capture::matcher(Self[A], Matcher[A]) -> Matcher[A]
+pub fn[A] Capture::new() -> Self[A]
+pub fn[A] Capture::values(Self[A]) -> Array[A]
+
 pub struct Controller {
   // private fields
 }
 pub fn Controller::missing_calls(Self) -> Array[String]
 pub fn Controller::new() -> Self
+pub fn Controller::report(Self) -> Json
+pub fn Controller::snapshot(Self) -> Array[ExpectationStatus]
 pub fn Controller::verify(Self) -> Unit raise VerificationError
+
+pub struct ExpectationStatus {
+  method_name : String
+  matcher : String
+  minimum : Int32
+  maximum : Int32?
+  seen : Int32
+  satisfied : Bool
+} derive(ToJson, @debug.Debug)
+pub fn ExpectationStatus::to_json(Self) -> Json
+pub fn ExpectationStatus::to_repr(Self) -> @debug.Repr
 
 pub struct Matcher[A] {
   // private fields
 }
+pub fn[A] Matcher::and_(Self[A], Self[A]) -> Self[A]
+pub fn[A] Matcher::not_(Self[A]) -> Self[A]
+pub fn[A] Matcher::or_(Self[A], Self[A]) -> Self[A]
+pub fn[A, B] Matcher::project(Self[A], String, (B) -> A) -> Self[B]
 
 pub struct Method[A, F] {
   // private fields
@@ -52,6 +80,7 @@ pub struct Method[A, F] {
 pub fn[A, F] Method::expect(Self[A, F], Matcher[A], F, times? : Int32, sequence? : Sequence, count? : CallCount) -> Unit
 pub fn[A, F] Method::new(Controller, String) -> Self[A, F]
 pub fn[A, F] Method::take(Self[A, F], A) -> F
+pub fn[A, F] Method::try_expect(Self[A, F], Matcher[A], F, times? : Int32, sequence? : Sequence, count? : CallCount) -> Result[Unit, CallFailure]
 pub fn[A, F] Method::try_take(Self[A, F], A) -> Result[F, CallFailure]
 
 pub struct Sequence {
