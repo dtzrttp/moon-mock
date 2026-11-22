@@ -1,0 +1,13 @@
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:2 ("选择末尾预期（1、32、256 条）") ok
+name             time (mean ± σ)         range (min … max)
+末尾匹配/1             11.16 ns ±   0.74 ns    10.03 ns …  12.53 ns  in 10 × 100000 runs
+末尾匹配/32           210.59 ns ±   3.37 ns   204.61 ns … 215.18 ns  in 10 × 100000 runs
+末尾匹配/256            2.49 µs ± 132.96 ns     2.36 µs …   2.69 µs  in 10 ×  42912 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:16 ("成功匹配首个预期和参数不符") ok
+name         time (mean ± σ)         range (min … max)
+首项成功           11.66 ns ±   0.68 ns    10.77 ns …  12.78 ns  in 10 × 100000 runs
+失败诊断          119.24 ns ±   3.86 ns   113.82 ns … 124.89 ns  in 10 × 100000 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:25 ("创建并完成32步有序调用") ok
+time (mean ± σ)         range (min … max)
+   9.78 µs ± 188.04 ns     9.51 µs …  10.09 µs  in 10 ×  10685 runs
+Total tests: 3, passed: 3, failed: 0.

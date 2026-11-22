@@ -1,0 +1,18 @@
+[dtzrttp/moon-mock] bench generator/generator_bench_test.mbt:2 ("解析生成格式化1、16、64个方法") ok
+name               time (mean ± σ)         range (min … max)
+生成方法数/1               1.87 ms ±  64.30 µs     1.77 ms …   1.96 ms  in 10 ×     48 runs
+生成方法数/16             29.54 ms ±   1.41 ms    28.13 ms …  32.21 ms  in 10 ×      4 runs
+生成方法数/64            208.79 ms ±  10.74 ms   195.99 ms … 224.81 ms  in 10 ×      1 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:2 ("选择末尾预期（1、32、256 条）") ok
+name             time (mean ± σ)         range (min … max)
+末尾匹配/1             11.51 ns ±   0.80 ns    10.69 ns …  13.02 ns  in 10 × 100000 runs
+末尾匹配/32           120.52 ns ±   2.72 ns   116.95 ns … 125.86 ns  in 10 × 100000 runs
+末尾匹配/256            1.16 µs ±  34.12 ns     1.12 µs …   1.22 µs  in 10 ×  82246 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:22 ("成功匹配首个预期和参数不符") ok
+name         time (mean ± σ)         range (min … max)
+首项成功           10.96 ns ±   0.69 ns    10.17 ns …  12.06 ns  in 10 × 100000 runs
+失败诊断          129.42 ns ±  10.55 ns   115.92 ns … 147.87 ns  in 10 × 100000 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:37 ("创建并完成32步有序调用") ok
+time (mean ± σ)         range (min … max)
+   8.90 µs ± 561.51 ns     8.22 µs …   9.91 µs  in 10 ×  12132 runs
+Total tests: 4, passed: 4, failed: 0.

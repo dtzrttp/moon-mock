@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "inputs": [
+    {
+      "name": "exa-Transport",
+      "repository": "marianoguerra/exa-mb",
+      "commit": "924f04f0f8aa62133b7da26f0146bf3c5de62633",
+      "file": "transport.mbt",
+      "trait": "Transport",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "moondb-Driver",
+      "repository": "moonbitstack/moondb",
+      "commit": "12ad7f71837c65f629fc6e23d662ab16cffccb53",
+      "file": "src/driver.mbt",
+      "trait": "Driver",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "moondb-AsyncDriver",
+      "repository": "moonbitstack/moondb",
+      "commit": "12ad7f71837c65f629fc6e23d662ab16cffccb53",
+      "file": "src/async_driver.mbt",
+      "trait": "AsyncDriver",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "moondb-Cursor",
+      "repository": "moonbitstack/moondb",
+      "commit": "12ad7f71837c65f629fc6e23d662ab16cffccb53",
+      "file": "src/cursor.mbt",
+      "trait": "Cursor",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "moondb-AsyncCursor",
+      "repository": "moonbitstack/moondb",
+      "commit": "12ad7f71837c65f629fc6e23d662ab16cffccb53",
+      "file": "src/async_cursor.mbt",
+      "trait": "AsyncCursor",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "moondb-Stmt",
+      "repository": "moonbitstack/moondb",
+      "commit": "12ad7f71837c65f629fc6e23d662ab16cffccb53",
+      "file": "src/stmt.mbt",
+      "trait": "Stmt",
+      "license": "Apache-2.0"
+    }
+  ]
+}

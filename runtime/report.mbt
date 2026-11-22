@@ -28,7 +28,7 @@ pub fn Controller::snapshot(self : Controller) -> Array[ExpectationStatus] {
 }
 
 ///|
-/// JSON 报告只包含计数及匹配说明。仅传递给 equal_to 的值会出现在说明中。
+/// JSON 报告包含计数与匹配说明，说明中可能带有使用者提供的测试数据。
 pub fn Controller::report(self : Controller) -> Json {
   {
     "schema_version": 1,

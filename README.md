@@ -98,3 +98,7 @@ mock.expect_lookup(@mock_runtime.equal_to(42), "book", count=@mock_runtime.CallC
 ## 验证与许可
 
 CI 检查格式、静态检查、生成文件是否过期、JS/native 测试和 CLI 构建。构建后执行 `node tools/cli-smoke.mjs js` 和 `node tools/cli-smoke.mjs native` 验收 CLI。`node tools/consumer-smoke.mjs js` 和 `node tools/consumer-smoke.mjs native` 验证另一个 MoonBit 模块从生成到运行的流程。项目采用 Apache-2.0。 [来源与依赖许可](NOTICE.md)
+
+2026-11-22 的 JS/native 本地验证各通过52项项目测试、18条CLI命令及9项独立模块测试。发行包解压后再次运行消费方测试，native 另验证独立安装。固定种子的模型对照覆盖32000次调用。CI 编译微基准并运行发行包消费方验收。 [测试口径和边界](docs/testing.md)
+
+六个真实接口和三个合成接口的 CLI 基准共记录198个墙钟样本，并保存运行库变更前后的双后端微基准。每份结果包含环境、提交、输入输出哈希及实际采样方法。 [实测数据](docs/benchmarks/2026-11-22.md) · [复现方法](docs/benchmarks/README.md)
