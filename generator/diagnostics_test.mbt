@@ -57,3 +57,57 @@ test "异常类型名不会作为源码插入输出" {
     )
   }
 }
+
+///|
+test "递归类型签名的64层边界和超限定位" {
+  for depth in [64, 65] {
+    let mut typ = "Int32"
+    for _ in 0..<depth {
+      typ = "Array[" + typ + "]"
+    }
+    for
+      signature in [
+        "fn read(Self, " + typ + ") -> Unit",
+        "fn read(Self) -> " + typ,
+      ] {
+      let result = Ok(
+        @generator.generate(
+          "trait Nested { " + signature + " }",
+          "Nested",
+          filename="nested.mbt",
+        ),
+      ) catch {
+        @generator.GenerationError(message) => Err(message)
+      }
+      if depth == 64 {
+        assert_true(result is Ok(_))
+      } else {
+        guard result is Err(message) else { fail("65层嵌套应被拒绝") }
+        assert_true(message.contains("nested.mbt:1:"))
+        assert_true(message.contains("resource_limit"))
+      }
+    }
+  }
+}
+
+///|
+test "嵌套函数和可选类型同样计入深度预算" {
+  let mut typ = "Int32"
+  for _ in 0..<33 {
+    typ = "((Int32) -> " + typ + ")?"
+  }
+  let result = Ok(
+    @generator.generate(
+      "trait Nested { fn read(Self) -> " + typ + " }",
+      "Nested",
+    ),
+  ) catch {
+    @generator.GenerationError(message) => Err(message)
+  }
+  guard result is Err(message) else { fail("混合类型嵌套应被拒绝") }
+  assert_true(message.contains("resource_limit"))
+  let recovered = @generator.generate(
+    "trait Good { fn read(Self) -> Int32 }", "Good",
+  )
+  assert_true(recovered.contains("struct MockGood"))
+}

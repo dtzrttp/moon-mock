@@ -71,13 +71,23 @@ fn function_type_text(
 }
 
 ///|
-fn type_text(typ : @syntax.Type, file : String) -> String raise GenerationError {
+fn type_text(
+  typ : @syntax.Type,
+  file : String,
+  depth~ : Int32 = 0,
+) -> String raise GenerationError {
+  if depth > 64 {
+    let at = typ.loc().start
+    raise GenerationError(
+      "\{file}:\{at.lnum}:\{at.column()}: resource_limit: 类型嵌套最多 64 层",
+    )
+  }
   match typ {
     Name(constr_id~, tys~, ..) => {
       let name = constructor_name(constr_id, file)
       let args = []
       for child in tys.iter() {
-        args.push(type_text(child, file))
+        args.push(type_text(child, file, depth=depth + 1))
       }
       if args.is_empty() {
         name
@@ -86,11 +96,11 @@ fn type_text(typ : @syntax.Type, file : String) -> String raise GenerationError 
       }
     }
     Object(constr_id) => "&" + constructor_name(constr_id, file)
-    Option(ty~, ..) => type_text(ty, file) + "?"
+    Option(ty~, ..) => type_text(ty, file, depth=depth + 1) + "?"
     Tuple(tys~, ..) => {
       let args = []
       for child in tys.iter() {
-        args.push(type_text(child, file))
+        args.push(type_text(child, file, depth=depth + 1))
       }
       "(" + args.join(", ") + ")"
     }
@@ -100,11 +110,11 @@ fn type_text(typ : @syntax.Type, file : String) -> String raise GenerationError 
       }
       let params = []
       for arg in args.iter() {
-        params.push(type_text(arg, file))
+        params.push(type_text(arg, file, depth=depth + 1))
       }
       let async_ = is_async is Some(_)
-      let returns = type_text(res, file)
-      let error = error_type_text(err, async_, file, loc)
+      let returns = type_text(res, file, depth=depth + 1)
+      let error = error_type_text(err, async_, file, loc, depth=depth + 1)
       "(" + function_type_text(params.join(", "), returns, error, async_) + ")"
     }
     _ => {
@@ -124,9 +134,10 @@ fn error_type_text(
   async_ : Bool,
   file : String,
   location : @basic.Location,
+  depth~ : Int32 = 0,
 ) -> String? raise GenerationError {
   match err {
-    @syntax.ErrorType(ty~) => Some(type_text(ty, file))
+    @syntax.ErrorType(ty~) => Some(type_text(ty, file, depth~))
     DefaultErrorType(_) => Some("Error")
     NoErrorType if async_ => Some("Error")
     NoErrorType | Noraise(_) => None
