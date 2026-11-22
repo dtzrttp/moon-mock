@@ -121,14 +121,8 @@ pub fn[A, F] Method::try_take(
   }
   let mut blocked : String? = None
   let mut exhausted : (Ticket, Int32)? = None
-  let descriptions = []
-  let mut actual_renderer : ((A) -> String)? = None
   for rule in self.rules {
     if !(rule.matcher.accepts)(args) {
-      descriptions.push(rule.matcher.description)
-      if actual_renderer is None {
-        actual_renderer = rule.matcher.describe_actual
-      }
       continue
     }
     if rule.ticket.count.maximum is Some(maximum) && rule.ticket.seen >= maximum {
@@ -157,6 +151,14 @@ pub fn[A, F] Method::try_take(
         message: "\{self.name}（\{ticket.description}）已达到 \{maximum} 次上限",
       })
     _ => {
+      let descriptions = []
+      let mut actual_renderer : ((A) -> String)? = None
+      for rule in self.rules {
+        descriptions.push(rule.matcher.description)
+        if actual_renderer is None {
+          actual_renderer = rule.matcher.describe_actual
+        }
+      }
       let actual = match actual_renderer {
         Some(render) => "，实际参数 " + render(args)
         None => ""
