@@ -43,7 +43,7 @@ assert.equal(readFileSync(join(sandbox, 'moon.mod'), 'utf8'),
 assert(existsSync(join(sandbox, 'tools', 'consumer-smoke.mjs')));
 run('moon', ['build', '--target', target, '--deny-warn'], sandbox);
 const evidence = run(process.execPath, ['tools/consumer-smoke.mjs', target], sandbox);
-assert(evidence.includes('9/9'));
+assert(evidence.includes('10/10'));
 if (target === 'native') {
   const installBin = join(sandbox, '_build', 'installed-bin');
   mkdirSync(installBin, { recursive: true });
@@ -52,4 +52,4 @@ if (target === 'native') {
   assert(existsSync(installed), '应得到独立安装的 CLI');
   assert(run(installed, ['--help'], sandbox).includes('generate'));
 }
-console.log(target + ' 发行包解压后构建与全新消费方 9/9 通过，目录 ' + sandbox);
+console.log(target + ' 发行包解压后构建与全新消费方 10/10 通过，目录 ' + sandbox);

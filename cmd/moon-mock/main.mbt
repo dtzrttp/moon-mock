@@ -37,6 +37,22 @@ fn read_source(path : String) -> String raise @fs.IOError {
 }
 
 ///|
+fn path_key(path : String) -> String {
+  let resolved = @path.Path(path).resolve().to_string()
+  if @path.sep == '\\' {
+    resolved.to_lower()
+  } else {
+    resolved
+  }
+}
+
+///|
+fn contains_trait(source : String) -> Bool {
+  let (declarations, _) = @parser.parse_string(source, parser=Handrolled)
+  declarations.iter().any(declaration => declaration is @syntax.TopTrait(_))
+}
+
+///|
 fn run(args : ArrayView[String]) -> Unit raise {
   if args is ["--help"] || args is ["-h"] {
     println(usage)
@@ -83,10 +99,15 @@ fn run(args : ArrayView[String]) -> Unit raise {
   match mode {
     None => println(generated.trim_end().to_owned())
     Some((option, output)) => {
-      if !output.has_suffix("_wbtest.mbt") ||
-        source_file == output ||
-        extra_files.contains(output) {
+      if !output.has_suffix("_wbtest.mbt") {
         raise UsageError("输出必须是独立的 *_wbtest.mbt 文件")
+      }
+      let output_key = path_key(output)
+      if path_key(source_file) == output_key ||
+        extra_files.iter().any(path => path_key(path) == output_key) {
+        raise UsageError(
+          "source_output_conflict: 输出与输入源码指向同一路径",
+        )
       }
       if option == "--check" {
         if !@fs.path_exists(output) ||
@@ -95,11 +116,16 @@ fn run(args : ArrayView[String]) -> Unit raise {
           raise UsageError("generated_out_of_date: " + output)
         }
       } else {
-        if @fs.path_exists(output) &&
-          !@fs.read_file_to_string(output)
-          .trim_start()
-          .has_prefix("// 由 moon-mock 生成") {
-          raise UsageError("拒绝覆盖非生成文件：" + output)
+        if @fs.path_exists(output) {
+          let previous = @fs.read_file_to_string(output)
+          if !previous.trim_start().has_prefix("// 由 moon-mock 生成") {
+            raise UsageError("拒绝覆盖非生成文件：" + output)
+          }
+          if contains_trait(previous) {
+            raise UsageError(
+              "source_output_conflict: 输出文件包含 trait 声明",
+            )
+          }
         }
         @fs.write_string_to_file(output, generated)
       }

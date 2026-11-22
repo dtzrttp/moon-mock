@@ -13,6 +13,24 @@ moon update
 moon test --target js --deny-warn
 ```
 
+## 安装到自己的项目
+
+从 Mooncakes 安装固定版本的 native CLI 到指定目录，并在使用方添加运行库依赖。
+
+```sh
+moon install dtzrttp/moon-mock/cmd/moon-mock@0.1.0 --bin ./.bin
+moon add dtzrttp/moon-mock@0.1.0
+```
+
+执行时，Linux/macOS 使用 `./.bin/moon-mock`，Windows 使用 `.\.bin\moon-mock.exe`。命令行生成器需要平台 C 工具链，生成结果及运行库已验证 JS 和 native。也可以按照下文的工作区方式使用本地源码。
+
+```sh
+./.bin/moon-mock generate traits.mbt Repository --output mock_repository_wbtest.mbt
+moon test --target js --deny-warn
+```
+
+其中 `traits.mbt` 和 `Repository` 替换为自己的源码文件及 trait 名称，白盒测试导入见下一节。在本仓库执行 `node tools/registry-smoke.mjs 0.1.0` 可以从公开注册表下载、安装 CLI，并在全新模块生成三份 mock 后运行双后端测试。
+
 在本仓库生成事务示例的 mock，在相同包的白盒测试中使用：
 
 ```sh
@@ -82,6 +100,14 @@ mock.expect_lookup(@mock_runtime.equal_to(42), "book", count=@mock_runtime.CallC
 
 ## 可运行示例
 
+| 完整使用场景 | 使用方式及预期结果 |
+| --- | --- |
+| 数据库事务回归 | 数据访问层开发者从 Driver 生成 mock，令指定 SQL 写入抛错，登记开启事务、写入、回滚的顺序并禁止提交。测试确认错误传播及回滚恰好一次。 |
+| SDK 异步重试 | SDK 开发者为 Transport 登记同一路径首次失败、第二次挂起后成功，运行真实重试逻辑，检查次数、顺序和最终响应。 |
+| 接口变更的 CI 检查 | 维护者提交生成文件，CI 使用相同输入执行 `--check`。接口改动后未更新 mock 会返回2，重新生成并更新业务预期后再运行测试。 |
+
+下列命令在仓库根目录运行。
+
 | 示例 | 测试的业务行为 | 复现 |
 | --- | --- | --- |
 | 事务 | 写入失败后回滚，成功时按顺序提交 | `moon test examples/transaction --target js --deny-warn` |
@@ -99,6 +125,6 @@ mock.expect_lookup(@mock_runtime.equal_to(42), "book", count=@mock_runtime.CallC
 
 CI 检查格式、静态检查、生成文件是否过期、JS/native 测试和 CLI 构建。构建后执行 `node tools/cli-smoke.mjs js` 和 `node tools/cli-smoke.mjs native` 验收 CLI。`node tools/consumer-smoke.mjs js` 和 `node tools/consumer-smoke.mjs native` 验证另一个 MoonBit 模块从生成到运行的流程。项目采用 Apache-2.0。 [来源与依赖许可](NOTICE.md)
 
-2026-11-22 的 JS/native 本地验证各通过52项项目测试、18条CLI命令及9项独立模块测试。发行包解压后再次运行消费方测试，native 另验证独立安装。固定种子的模型对照覆盖32000次调用。CI 编译微基准并运行发行包消费方验收。 [测试口径和边界](docs/testing.md)
+2026-11-22 验收复核中，JS/native 各通过52项项目测试和10项独立模块测试。CLI 新增路径别名及硬链接覆盖保护，Windows 实际执行23条验收命令。96种签名组合全部进入消费模块的实际编译验收。发行包解压后再次运行同组测试，native 另验证独立安装。固定种子的模型对照覆盖32000次调用。 [测试口径和边界](docs/testing.md)
 
 六个真实接口和三个合成接口的 CLI 基准共记录198个墙钟样本，并保存运行库变更前后的双后端微基准。每份结果包含环境、提交、输入输出哈希及实际采样方法。 [实测数据](docs/benchmarks/2026-11-22.md) · [复现方法](docs/benchmarks/README.md)

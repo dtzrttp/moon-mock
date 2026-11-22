@@ -5,13 +5,17 @@
 | 范围 | 每个后端的实际结果 | 复现 |
 | --- | --- | --- |
 | 项目测试 | 52/52 | `moon test --target js --deny-warn` 或 `--target native` |
-| CLI 验收 | 18 个命令 | `node tools/cli-smoke.mjs js` 或 `native` |
-| 独立消费方 | 9/9 | `node tools/consumer-smoke.mjs js` 或 `native` |
-| 发行 ZIP 的全新消费方 | 9/9 | `node tools/package-smoke.mjs js` 或 `native` |
+| CLI 验收 | 按平台输出实际命令数，Windows 复核为23条 | `node tools/cli-smoke.mjs js` 或 `native` |
+| 独立消费方 | 10/10，包含96种签名的编译矩阵 | `node tools/consumer-smoke.mjs js` 或 `native` |
+| 发行 ZIP 的全新消费方 | 10/10 | `node tools/package-smoke.mjs js` 或 `native` |
 | Exa SDK 固定版本接入 | 2/2 | 见 adoption.md |
 | moondb 固定版本接入 | 5/5 | 见 adoption.md |
 
-消费方脚本须先构建对应目标的 CLI。打包脚本自行创建 ZIP，并在新目录验证发行包构建。native 打包脚本进一步安装 CLI 到临时 bin 后运行帮助命令。ZIP 检查覆盖 LICENSE、清单、缓存排除和路径越界。发行包测试与源码消费方有相同的九项业务测试，表中分别记录两种分发方式。
+消费方脚本须先构建对应目标的 CLI。打包脚本自行创建 ZIP，并在新目录验证发行包构建。native 打包脚本进一步安装 CLI 到临时 bin 后运行帮助命令。ZIP 检查覆盖 LICENSE、清单、缓存排除和路径越界。发行包测试与源码消费方有相同的十项测试，表中分别记录两种分发方式。
+
+验收复核将96种签名放进同一消费模块，经实际编译器检查生成的每个实现，并调用其中一个同步方法。该检查补充原有96种签名单测的解析及确定性验证。CLI 的额外用例检查路径规范化、Windows大小写及硬链接，确保输入源码不会被输出覆盖。
+
+在公开版本发布后，可用 `node tools/registry-smoke.mjs 0.1.0` 独立下载 CLI 与运行库，生成三份 mock 并对同一组十项测试执行 JS/native 验证。该工作区只声明消费模块，没有本地模块替换。
 
 ## 参考模型和变更测试
 

@@ -4,6 +4,9 @@ import {
   "moonbitlang/core/env",
   "moonbitlang/x/fs",
   "moonbitlang/x/sys",
+  "moonbitlang/x/path",
+  "moonbitlang/parser",
+  "moonbitlang/parser/syntax",
 }
 
 pkgtype(kind: "executable")

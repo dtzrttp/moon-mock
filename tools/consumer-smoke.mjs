@@ -45,6 +45,7 @@ function run(program, args, cwd) {
 const base = join(root, '_build', target, 'debug', 'build', 'cmd', 'moon-mock', 'moon-mock');
 const cli = target === 'js' ? process.execPath : base + '.exe';
 const prefix = target === 'js' ? [base + '.js'] : [];
+run(cli, [...prefix, 'generate', 'signature_matrix.mbt', 'SignatureMatrix', '--output', 'mock_signature_matrix_wbtest.mbt'], consumer);
 run(cli, [...prefix, 'generate', 'traits.mbt', 'Catalog', '--output', 'mock_catalog_wbtest.mbt'], consumer);
 const hierarchy = [
   'generate', 'service.mbt', 'Service',
@@ -54,5 +55,5 @@ const hierarchy = [
 run(cli, [...prefix, ...hierarchy, '--output', 'mock_service_wbtest.mbt'], consumer);
 run(cli, [...prefix, ...hierarchy, '--check', 'mock_service_wbtest.mbt'], consumer);
 const result = run('moon', ['test', '.', '--target', target, '--deny-warn'], consumer);
-assert.match(result, /Total tests: 9, passed: 9, failed: 0/);
-console.log(target + ' 独立消费方测试 9/9 通过，保留工作区 ' + sandbox);
+assert.match(result, /Total tests: 10, passed: 10, failed: 0/);
+console.log(target + ' 独立消费方测试 10/10 通过，保留工作区 ' + sandbox);
