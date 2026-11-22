@@ -1,0 +1,63 @@
+io_unix.c
+epoll.c
+openssl.c
+kqueue.c
+c_buffer.c
+runtime.c
+fd_util.c
+env.c
+dir.c
+process.c
+iocp.c
+event_bus.c
+io_windows.c
+schannel.c
+fs.c
+watch_kqueue.c
+watch_inotify.c
+epoll.c
+utf.c
+stub.c
+io_unix.c
+kqueue.c
+backtrace.c
+signal.c
+sync_io.c
+stub.c
+thread_pool.c
+event_bus.c
+socket.c
+iocp.c
+watch_windows.c
+process.c
+fs.c
+<项目目录>\.mooncakes\moonbitlang\async\src\internal\event_loop\fs.c(32): warning C4005: “EINVAL”: 宏重定义
+C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt\errno.h(78): note: 参见“EINVAL”的前一个定义
+stdio.c
+io_windows.c
+signal.c
+stub.c
+stub.c
+stdio.c
+thread_pool.c
+stub.c
+stub.c
+runtime.internal_test.c
+  正在创建库 <项目目录>\_build\native\release\bench\runtime\runtime.internal_test.lib 和对象 <项目目录>\_build\native\release\bench\runtime\runtime.internal_test.exp
+runtime.whitebox_test.c
+  正在创建库 <项目目录>\_build\native\release\bench\runtime\runtime.whitebox_test.lib 和对象 <项目目录>\_build\native\release\bench\runtime\runtime.whitebox_test.exp
+runtime.blackbox_test.c
+  正在创建库 <项目目录>\_build\native\release\bench\runtime\runtime.blackbox_test.lib 和对象 <项目目录>\_build\native\release\bench\runtime\runtime.blackbox_test.exp
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:2 ("选择末尾预期（1、32、256 条）") ok
+name             time (mean ± σ)         range (min … max)
+末尾匹配/1             95.31 ns ±   3.05 ns    90.55 ns … 101.30 ns  in 10 × 100000 runs
+末尾匹配/32           361.62 ns ±  10.19 ns   349.44 ns … 380.66 ns  in 10 × 100000 runs
+末尾匹配/256            1.68 µs ±  21.14 ns     1.65 µs …   1.72 µs  in 10 ×  58963 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:22 ("成功匹配首个预期和参数不符") ok
+name         time (mean ± σ)         range (min … max)
+首项成功           84.32 ns ±   3.53 ns    79.67 ns …  91.29 ns  in 10 × 100000 runs
+失败诊断          792.91 ns ±  14.73 ns   772.31 ns … 814.57 ns  in 10 × 100000 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:37 ("创建并完成32步有序调用") ok
+time (mean ± σ)         range (min … max)
+  36.24 µs ± 985.85 ns    35.14 µs …  37.89 µs  in 10 ×   2815 runs
+Total tests: 3, passed: 3, failed: 0.

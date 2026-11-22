@@ -1,0 +1,19 @@
+runtime.whitebox_test.c
+  正在创建库 <项目目录>\_build\native\release\bench\runtime\runtime.whitebox_test.lib 和对象 <项目目录>\_build\native\release\bench\runtime\runtime.whitebox_test.exp
+runtime.internal_test.c
+  正在创建库 <项目目录>\_build\native\release\bench\runtime\runtime.internal_test.lib 和对象 <项目目录>\_build\native\release\bench\runtime\runtime.internal_test.exp
+runtime.blackbox_test.c
+  正在创建库 <项目目录>\_build\native\release\bench\runtime\runtime.blackbox_test.lib 和对象 <项目目录>\_build\native\release\bench\runtime\runtime.blackbox_test.exp
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:2 ("选择末尾预期（1、32、256 条）") ok
+name             time (mean ± σ)         range (min … max)
+末尾匹配/1             57.37 ns ±   2.25 ns    53.99 ns …  60.11 ns  in 10 × 100000 runs
+末尾匹配/32           124.81 ns ±   5.15 ns   119.54 ns … 136.64 ns  in 10 × 100000 runs
+末尾匹配/256          598.48 ns ±  12.09 ns   582.42 ns … 620.03 ns  in 10 × 100000 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:22 ("成功匹配首个预期和参数不符") ok
+name         time (mean ± σ)         range (min … max)
+首项成功           57.54 ns ±   2.34 ns    54.15 ns …  61.03 ns  in 10 × 100000 runs
+失败诊断          849.19 ns ±  19.09 ns   823.64 ns … 877.26 ns  in 10 × 100000 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:37 ("创建并完成32步有序调用") ok
+time (mean ± σ)         range (min … max)
+  26.85 µs ± 603.65 ns    26.14 µs …  27.83 µs  in 10 ×   3779 runs
+Total tests: 3, passed: 3, failed: 0.
