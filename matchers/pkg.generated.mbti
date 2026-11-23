@@ -1,0 +1,62 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dtzrttp/moon-mock/matchers"
+
+import {
+  "dtzrttp/moon-mock/runtime",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn[A] any_element(@runtime.Matcher[A]) -> @runtime.Matcher[Array[A]]
+
+pub fn[A] array_length_range(Int32, Int32) -> Result[@runtime.Matcher[Array[A]], @runtime.CallFailure]
+
+pub fn at_least(Int32) -> @runtime.Matcher[Int32]
+
+pub fn at_most(Int32) -> @runtime.Matcher[Int32]
+
+pub fn[A : Eq + @debug.Debug] contains_element(A) -> @runtime.Matcher[Array[A]]
+
+pub fn contains_text(String) -> @runtime.Matcher[String]
+
+pub fn[A] element_at(Int32, @runtime.Matcher[A]) -> Result[@runtime.Matcher[Array[A]], @runtime.CallFailure]
+
+pub fn ends_with(String) -> @runtime.Matcher[String]
+
+pub fn[A, E] err(@runtime.Matcher[E]) -> @runtime.Matcher[Result[A, E]]
+
+pub fn[A] every_element(@runtime.Matcher[A]) -> @runtime.Matcher[Array[A]]
+
+pub fn[A] exact_elements(Array[@runtime.Matcher[A]]) -> @runtime.Matcher[Array[A]]
+
+pub fn[A, B] first(@runtime.Matcher[A]) -> @runtime.Matcher[(A, B)]
+
+pub fn greater_than(Int32) -> @runtime.Matcher[Int32]
+
+pub fn int_range(Int32, Int32) -> Result[@runtime.Matcher[Int32], @runtime.CallFailure]
+
+pub fn less_than(Int32) -> @runtime.Matcher[Int32]
+
+pub fn[A] none() -> @runtime.Matcher[A?]
+
+pub fn[A, E] ok(@runtime.Matcher[A]) -> @runtime.Matcher[Result[A, E]]
+
+pub fn[A, B] pair(@runtime.Matcher[A], @runtime.Matcher[B]) -> @runtime.Matcher[(A, B)]
+
+pub fn[A, B] second(@runtime.Matcher[B]) -> @runtime.Matcher[(A, B)]
+
+pub fn[A] some(@runtime.Matcher[A]) -> @runtime.Matcher[A?]
+
+pub fn starts_with(String) -> @runtime.Matcher[String]
+
+pub fn text_length_range(Int32, Int32) -> Result[@runtime.Matcher[String], @runtime.CallFailure]
+
+pub fn[A] unordered_elements(Array[@runtime.Matcher[A]]) -> Result[@runtime.Matcher[Array[A]], @runtime.CallFailure]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -20,6 +20,12 @@ pub struct CallFailure {
 }
 
 ///|
+/// 构造带稳定错误码和可读消息的失败，供外部匹配器和运行时扩展使用。
+pub fn CallFailure::new(code : String, message : String) -> CallFailure {
+  { code, message, }
+}
+
+///|
 /// 创建一个类型化的方法预期列表。生成器为每个方法创建一个列表。
 pub fn[A, F] Method::new(
   controller : Controller,
@@ -83,6 +89,7 @@ pub fn[A, F] Method::try_expect(
   }
   let ticket = {
     name: self.name,
+    index: self.controller.tickets.length(),
     description: matcher.description,
     count: count.unwrap_or(CallCount::exact(times)),
     seen: 0,
@@ -102,22 +109,22 @@ pub fn[A, F] Method::try_expect(
 }
 
 ///|
-/// 在执行回调前选择预期并增加实际次数。
+/// 在执行回调前选择预期并增加实际次数。启用历史时记录选择结果。
 pub fn[A, F] Method::try_take(
   self : Method[A, F],
   args : A,
 ) -> Result[F, CallFailure] {
   if self.controller.closed {
-    return Err({
-      code: "scope_closed",
-      message: self.name + " 的测试作用域已关闭",
-    })
+    return self.reject_call(
+      "scope_closed",
+      self.name + " 的测试作用域已关闭",
+    )
   }
   if self.rules.is_empty() {
-    return Err({
-      code: "unexpected_call",
-      message: self.name + " 没有配置调用预期",
-    })
+    return self.reject_call(
+      "unexpected_call",
+      self.name + " 没有配置调用预期",
+    )
   }
   let mut blocked : String? = None
   let mut exhausted : (Ticket, Int32)? = None
@@ -139,17 +146,21 @@ pub fn[A, F] Method::try_take(
     if rule.ticket.seen < 2147483647 {
       rule.ticket.seen += 1
     }
-    rule.matcher.selected(args)
+    if self.controller.history_buffer is Some(history) {
+      history.record(self.name, "selected", None, Some(rule.ticket.index))
+    }
+    let selection = Selection::new()
+    rule.matcher.prepare_selected(args, selection)
+    selection.complete()
     return Ok(rule.action)
   }
   match (blocked, exhausted) {
-    (Some(reason), _) =>
-      Err({ code: "out_of_order", message: self.name + reason, })
+    (Some(reason), _) => self.reject_call("out_of_order", self.name + reason)
     (None, Some((ticket, maximum))) =>
-      Err({
-        code: "too_many_calls",
-        message: "\{self.name}（\{ticket.description}）已达到 \{maximum} 次上限",
-      })
+      self.reject_call(
+        "too_many_calls",
+        "\{self.name}（\{ticket.description}）已达到 \{maximum} 次上限",
+      )
     _ => {
       let descriptions = []
       let mut actual_renderer : ((A) -> String)? = None
@@ -163,15 +174,27 @@ pub fn[A, F] Method::try_take(
         Some(render) => "，实际参数 " + render(args)
         None => ""
       }
-      Err({
-        code: "argument_mismatch",
-        message: self.name +
+      self.reject_call(
+        "argument_mismatch",
+        self.name +
         " 的参数未匹配预期：" +
         descriptions.join("、") +
         actual,
-      })
+      )
     }
   }
+}
+
+///|
+fn[A, F] Method::reject_call(
+  self : Method[A, F],
+  code : String,
+  message : String,
+) -> Result[F, CallFailure] {
+  if self.controller.history_buffer is Some(history) {
+    history.record(self.name, "rejected", Some(code), None)
+  }
+  Err({ code, message, })
 }
 
 ///|

@@ -1,15 +1,10 @@
 ///|
 test "成功选择后续预期不会构造实际值诊断" {
   let render_count = Ref(0)
-  let reject : Matcher[Int32] = {
-    description: "拒绝",
-    accepts: _ => false,
-    describe_actual: Some(value => {
-      render_count.val += 1
-      value.to_string()
-    }),
-    on_selected: None,
-  }
+  let reject : Matcher[Int32] = Matcher::custom("拒绝", _ => false, describe_actual=value => {
+    render_count.val += 1
+    value.to_string()
+  })
   let controller = Controller::new()
   let slot : Method[Int32, Int32] = Method::new(controller, "late")
   slot.expect(reject, 0, times=0)
@@ -45,18 +40,17 @@ test "延迟诊断保持登记顺序且不会再次执行谓词" {
     }),
     (),
   )
-  let detailed : Matcher[Int32] = {
-    description: "第二个",
-    accepts: _ => {
+  let detailed : Matcher[Int32] = Matcher::custom(
+    "第二个",
+    _ => {
       checked.val += 1
       false
     },
-    describe_actual: Some(value => {
+    describe_actual=value => {
       rendered.val += 1
       value.to_string()
-    }),
-    on_selected: None,
-  }
+    },
+  )
   slot.expect(detailed, ())
   guard slot.try_take(99) is Err(error) else { fail("应报告参数不符") }
   assert_eq(error.code, "argument_mismatch")
@@ -73,15 +67,10 @@ test "延迟诊断保持登记顺序且不会再次执行谓词" {
 ///|
 test "次数和顺序失败优先且不渲染参数" {
   let rendered = Ref(0)
-  let reject : Matcher[Int32] = {
-    description: "拒绝",
-    accepts: _ => false,
-    describe_actual: Some(value => {
-      rendered.val += 1
-      value.to_string()
-    }),
-    on_selected: None,
-  }
+  let reject : Matcher[Int32] = Matcher::custom("拒绝", _ => false, describe_actual=value => {
+    rendered.val += 1
+    value.to_string()
+  })
   let controller = Controller::new()
   let sequence = Sequence::new()
   let prior : Method[Unit, Unit] = Method::new(controller, "prior")

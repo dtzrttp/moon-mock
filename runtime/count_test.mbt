@@ -124,3 +124,10 @@ test "重叠的范围匹配优先使用仍有余量的早期预期" {
     assert_true(slot.try_take("a") is Ok(2))
   })
 }
+
+///|
+test "其他包的受控失败可以构造并读取诊断" {
+  let failure = @runtime.CallFailure::new("invalid_input", "用户输入无效")
+  assert_eq(failure.code, "invalid_input")
+  assert_eq(failure.message, "用户输入无效")
+}

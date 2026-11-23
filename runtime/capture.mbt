@@ -12,13 +12,15 @@ pub fn[A] Capture::new() -> Capture[A] {
 ///|
 /// 次数和顺序检查通过后，在行为回调执行前记录参数。
 pub fn[A] Capture::matcher(self : Capture[A], inner : Matcher[A]) -> Matcher[A] {
-  {
-    ..inner,
-    on_selected: Some(value => {
-      inner.selected(value)
-      self.captured.push(value)
-    }),
-  }
+  Matcher::compose(
+    inner.description(),
+    value => inner.matches(value),
+    inner.describe_actual,
+    (value, selection) => {
+      selection.capture(() => self.captured.push(value))
+      inner.prepare_selected(value, selection)
+    },
+  )
 }
 
 ///|

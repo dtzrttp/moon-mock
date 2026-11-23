@@ -1,0 +1,10 @@
+import {
+  "dtzrttp/moon-mock/runtime",
+  "moonbitlang/core/debug",
+}
+
+import {
+  "dtzrttp/moon-mock/runtime",
+  "moonbitlang/core/bench",
+  "moonbitlang/core/random",
+} for "test"

@@ -18,7 +18,16 @@ pub fn[T] with_mock((Controller) -> T raise) -> T raise
 
 pub async fn[T] with_mock_async(async (Controller) -> T) -> T
 
+pub fn[T] with_mock_history(Int32, (Controller) -> T raise) -> T raise
+
+pub async fn[T] with_mock_history_async(Int32, async (Controller) -> T) -> T
+
 // Errors
+pub suberror HistoryConfigError {
+  InvalidHistoryCapacity(String)
+} derive(@debug.Debug)
+pub fn HistoryConfigError::to_repr(Self) -> @debug.Repr
+
 pub suberror VerificationError {
   VerificationFailed(String)
 } derive(@debug.Debug)
@@ -34,10 +43,22 @@ pub fn CallCount::exact(Int32) -> Self
 pub fn CallCount::try_at_least(Int32) -> Result[Self, CallFailure]
 pub fn CallCount::try_between(Int32, Int32) -> Result[Self, CallFailure]
 
+pub struct CallEvent {
+  ordinal : Int64
+  method_name : String
+  outcome : String
+  failure_code : String?
+  expectation_index : Int32?
+} derive(@debug.Debug)
+pub fn CallEvent::to_json(Self) -> Json
+pub fn CallEvent::to_repr(Self) -> @debug.Repr
+pub impl ToJson for CallEvent
+
 pub struct CallFailure {
   code : String
   message : String
 }
+pub fn CallFailure::new(String, String) -> Self
 
 pub struct Capture[A] {
   // private fields
@@ -49,11 +70,16 @@ pub fn[A] Capture::values(Self[A]) -> Array[A]
 pub struct Controller {
   // private fields
 }
+pub fn Controller::clear_history(Self) -> Unit
+pub fn Controller::history(Self) -> Array[CallEvent]
+pub fn Controller::history_dropped(Self) -> Int64
+pub fn Controller::history_report(Self) -> Json
 pub fn Controller::missing_calls(Self) -> Array[String]
 pub fn Controller::new() -> Self
 pub fn Controller::report(Self) -> Json
 pub fn Controller::snapshot(Self) -> Array[ExpectationStatus]
 pub fn Controller::verify(Self) -> Unit raise VerificationError
+pub fn Controller::with_history(Int32) -> Result[Self, CallFailure]
 
 pub struct ExpectationStatus {
   method_name : String
@@ -70,8 +96,14 @@ pub struct Matcher[A] {
   // private fields
 }
 pub fn[A] Matcher::and_(Self[A], Self[A]) -> Self[A]
+pub fn[A] Matcher::compose(String, (A) -> Bool, ((A) -> String)?, (A, Selection) -> Unit) -> Self[A]
+pub fn[A] Matcher::custom(String, (A) -> Bool, describe_actual? : (A) -> String, on_selected? : (A) -> Unit) -> Self[A]
+pub fn[A] Matcher::description(Self[A]) -> String
+pub fn[A] Matcher::matches(Self[A], A) -> Bool
 pub fn[A] Matcher::not_(Self[A]) -> Self[A]
+pub fn[A] Matcher::notify_selected(Self[A], A) -> Unit
 pub fn[A] Matcher::or_(Self[A], Self[A]) -> Self[A]
+pub fn[A] Matcher::prepare_selected(Self[A], A, Selection) -> Unit
 pub fn[A, B] Matcher::project(Self[A], String, (B) -> A) -> Self[B]
 
 pub struct Method[A, F] {
@@ -82,6 +114,14 @@ pub fn[A, F] Method::new(Controller, String) -> Self[A, F]
 pub fn[A, F] Method::take(Self[A, F], A) -> F
 pub fn[A, F] Method::try_expect(Self[A, F], Matcher[A], F, times? : Int32, sequence? : Sequence, count? : CallCount) -> Result[Unit, CallFailure]
 pub fn[A, F] Method::try_take(Self[A, F], A) -> Result[F, CallFailure]
+
+pub struct Selection {
+  // private fields
+}
+pub fn Selection::capture(Self, () -> Unit) -> Unit
+pub fn Selection::complete(Self) -> Unit
+pub fn Selection::new() -> Self
+pub fn Selection::notify(Self, () -> Unit) -> Unit
 
 pub struct Sequence {
   // private fields
