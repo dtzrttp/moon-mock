@@ -38,6 +38,8 @@ jobs:
       - run: moon test --target ${{ matrix.target }} --deny-warn
       - run: moon build --target ${{ matrix.target }} --deny-warn
       - run: node tools/cli-smoke.mjs ${{ matrix.target }}
+      - run: node tools/workflow-smoke.mjs ${{ matrix.target }}
+      - run: node tools/main-consumer-smoke.mjs ${{ matrix.target }}
       - run: node tools/consumer-smoke.mjs ${{ matrix.target }}
       - run: moon bench runtime generator --target ${{ matrix.target }} --release --deny-warn --build-only
       - run: node tools/package-smoke.mjs ${{ matrix.target }}

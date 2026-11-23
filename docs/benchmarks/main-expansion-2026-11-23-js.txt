@@ -1,0 +1,57 @@
+[dtzrttp/moon-mock] bench generator/prepared_bench_test.mbt:18 ("从同一文件生成1、4、16个 trait") ok
+name            time (mean ± σ)         range (min … max)
+重复解析/1             5.85 ms ± 393.59 µs     5.41 ms …   6.52 ms  in 10 ×     15 runs
+一次准备/1             5.50 ms ± 148.89 µs     5.30 ms …   5.78 ms  in 10 ×     17 runs
+批量请求/1            10.67 ms ± 663.60 µs     9.43 ms …  11.56 ms  in 10 ×     19 runs
+重复解析/4            40.17 ms ± 952.77 µs    39.04 ms …  41.68 ms  in 10 ×      3 runs
+一次准备/4            37.56 ms ±   3.22 ms    34.92 ms …  42.79 ms  in 10 ×      3 runs
+批量请求/4            40.46 ms ±   3.15 ms    36.40 ms …  45.12 ms  in 10 ×      3 runs
+重复解析/16          158.36 ms ±   5.11 ms   152.68 ms … 167.22 ms  in 10 ×      1 runs
+一次准备/16          148.33 ms ±  10.79 ms   137.32 ms … 168.92 ms  in 10 ×      1 runs
+批量请求/16          143.25 ms ±  10.53 ms   135.17 ms … 165.22 ms  in 10 ×      1 runs
+[dtzrttp/moon-mock] bench generator/generator_bench_test.mbt:2 ("解析生成格式化1、16、64个方法") ok
+name               time (mean ± σ)         range (min … max)
+生成方法数/1               1.76 ms ±  63.72 µs     1.67 ms …   1.88 ms  in 10 ×     51 runs
+生成方法数/16             28.97 ms ±   1.08 ms    27.67 ms …  30.86 ms  in 10 ×      4 runs
+生成方法数/64            481.47 ms ±  27.43 ms   448.24 ms … 539.21 ms  in 10 ×      1 runs
+[dtzrttp/moon-mock] bench matchers/matchers_bench_test.mbt:2 ("逐位置匹配的完整成功和末项拒绝") ok
+name             time (mean ± σ)         range (min … max)
+全部匹配/8             18.32 ns ±   1.44 ns    16.41 ns …  21.07 ns  in 10 × 100000 runs
+末项拒绝/8             19.60 ns ±   1.64 ns    17.78 ns …  23.54 ns  in 10 × 100000 runs
+全部匹配/32            76.74 ns ±   2.53 ns    72.27 ns …  80.29 ns  in 10 × 100000 runs
+末项拒绝/32            75.86 ns ±   2.79 ns    73.32 ns …  80.91 ns  in 10 × 100000 runs
+全部匹配/128          252.63 ns ±   4.79 ns   246.99 ns … 262.04 ns  in 10 × 100000 runs
+末项拒绝/128          258.74 ns ±   2.72 ns   255.05 ns … 262.81 ns  in 10 × 100000 runs
+[dtzrttp/moon-mock] bench matchers/matchers_bench_test.mbt:19 ("无序匹配的唯一位置和增广重排") ok
+name             time (mean ± σ)         range (min … max)
+唯一位置/8            180.40 ns ±   4.89 ns   173.64 ns … 185.92 ns  in 10 × 100000 runs
+增广重排/8            535.32 ns ±  13.65 ns   520.11 ns … 560.86 ns  in 10 × 100000 runs
+唯一位置/32             3.39 µs ±  29.69 ns     3.34 µs …   3.43 µs  in 10 ×  28899 runs
+增广重排/32            12.24 µs ±   2.35 µs     7.42 µs …  13.64 µs  in 10 ×  15047 runs
+唯一位置/128           97.16 µs ±   7.18 µs    91.46 µs … 108.44 µs  in 10 ×   1016 runs
+增广重排/128          195.95 µs ±   2.13 µs   193.83 µs … 200.61 µs  in 10 ×    512 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:2 ("选择末尾预期（1、32、256 条）") ok
+name             time (mean ± σ)         range (min … max)
+末尾匹配/1             10.87 ns ±   1.48 ns     9.79 ns …  14.64 ns  in 10 × 100000 runs
+末尾匹配/32            63.66 ns ±   1.85 ns    61.01 ns …  65.64 ns  in 10 × 100000 runs
+末尾匹配/256          534.39 ns ±  10.61 ns   523.17 ns … 552.45 ns  in 10 × 100000 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:22 ("成功匹配首个预期和参数不符") ok
+name         time (mean ± σ)         range (min … max)
+首项成功           11.86 ns ±   0.38 ns    11.41 ns …  12.71 ns  in 10 × 100000 runs
+失败诊断          121.46 ns ±   3.03 ns   118.09 ns … 127.18 ns  in 10 × 100000 runs
+[dtzrttp/moon-mock] bench runtime/runtime_bench_test.mbt:37 ("创建并完成32步有序调用") ok
+time (mean ± σ)         range (min … max)
+   4.36 µs ± 135.43 ns     4.17 µs …   4.56 µs  in 10 ×  22285 runs
+[dtzrttp/moon-mock] bench runtime/history_bench_test.mbt:2 ("有界历史满载时选中预期") ok
+name        time (mean ± σ)         range (min … max)
+容量/0          15.10 ns ±   1.33 ns    13.65 ns …  18.67 ns  in 10 × 100000 runs
+容量/1          33.93 ns ±   2.50 ns    30.32 ns …  36.53 ns  in 10 × 100000 runs
+容量/64         38.15 ns ±   2.19 ns    35.28 ns …  42.46 ns  in 10 × 100000 runs
+容量/1024       32.82 ns ±   5.42 ns    27.46 ns …  43.76 ns  in 10 × 100000 runs
+[dtzrttp/moon-mock] bench runtime/history_bench_test.mbt:27 ("已回卷历史的复制和 JSON 序列化") ok
+name        time (mean ± σ)         range (min … max)
+快照/32         51.98 ns ±   1.98 ns    49.39 ns …  54.26 ns  in 10 × 100000 runs
+JSON/32       22.50 µs ± 641.13 ns    21.78 µs …  23.48 µs  in 10 ×   4063 runs
+快照/1024        1.92 µs ±  43.07 ns     1.84 µs …   1.98 µs  in 10 ×  53655 runs
+JSON/1024      1.39 ms ±  59.17 µs     1.24 ms …   1.44 ms  in 10 ×    125 runs
+Total tests: 9, passed: 9, failed: 0.

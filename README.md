@@ -112,6 +112,8 @@ mock.expect_lookup(@mock_runtime.equal_to(42), "book", count=@mock_runtime.CallC
 | --- | --- | --- |
 | 事务 | 写入失败后回滚，成功时按顺序提交 | `moon test examples/transaction --target js --deny-warn` |
 | 网络传输 | 暂时错误触发重试，异步回调挂起后返回，关闭连接可抛错 | `moon test examples/transport --target js --deny-warn` |
+| 订单编排 | 扣款、库存预留、订单保存及失败补偿，异步通知失败标记待重试 | `moon test examples/order --target js --deny-warn` |
+| 缓存回源 | 缓存命中/故障降级、TTL、Unicode 长度上限和可选写入失败策略 | `moon test examples/cache --target js --deny-warn` |
 
 在两个真实项目的固定版本中也跑通了离线接入测试。Exa SDK 使用生成的传输层替身验证客户端如何处理 401。moondb 使用生成的 `Driver` 验证事务回滚和游标读取。 [测试结果与复现步骤](docs/adoption.md) · [查重记录](docs/dedup.md)
 
@@ -119,7 +121,34 @@ mock.expect_lookup(@mock_runtime.equal_to(42), "book", count=@mock_runtime.CallC
 
 生成器支持同包的 `Self` 接收者方法，覆盖位置参数、必填与可省略的标签参数、命名类型、泛型类型应用、`&Trait` 对象、可选类型、元组及函数类型。同步和异步方法可具有默认实现。方法与嵌套函数类型各自保留同步或异步语义以及抛错效果，支持具体或通用错误类型、异步默认错误和 `noraise`。签名中的类型需要能在同包测试中解析。支持从同包多份源码解析超 trait。循环、缺失或重复声明，以及继承链中不同 trait 声明的同名方法会报告源码位置。方法泛型、条件错误、`nocancel` 和跨包 trait 生成属于后续范围。
 
-匹配器支持 `and_`、`or_`、`not_`、`project` 和 `one_of`。通过 `Capture::matcher` 可以记录成功选中的调用参数。控制器提供不可变计数快照及带版本的 JSON 报告。继承冲突会同时定位两个声明，继承深度上限为 128 层。main 后续优化另限制类型嵌套为64层，并减少成功匹配时的诊断分配，尚未包含在已发布0.1.0中。完整生成、预期配置、异步生命周期与 CI 过程见 [使用指南](docs/usage.md)。
+匹配器支持 `and_`、`or_`、`not_`、`project` 和 `one_of`。通过 `Capture::matcher` 可以记录成功选中的调用参数。控制器提供不可变计数快照及带版本的 JSON 报告。继承冲突会同时定位两个声明，继承深度上限为 128 层。完整生成、预期配置、异步生命周期与 CI 过程见 [使用指南](docs/usage.md)。
+
+## main 分支的未发行扩展
+
+以下功能已在本仓库主分支实现，尚未包含在 Mooncakes `0.1.0` 中。按上面的固定版本安装时不会得到这些新 API；它们需要从当前源码构建。发布版本不会被主分支改写。
+
+- `matchers` 包新增字符串前后缀/子串、Unicode 码点长度、整数区间、Option/Result、二元组投影、数组逐项与无序一一匹配器。无序匹配最多处理128项；数组构造会复制匹配器列表。
+- `Controller::with_history` 开启有界循环调用历史；未启用时不记录。历史只保留方法名、成功/拒绝、错误码及期望序号，不保存参数、返回值或错误详情。容量范围为1至65536，可清理、导出 JSON，并可通过同步/异步作用域辅助函数自动核对未满足的调用。
+- 生成器新增结构化 trait 检查、预解析源码复用和批量生成 API。CLI 增加 `inspect <文件.mbt> [--json]` 与 `batch <清单.json> [--check]`。检查只解析语法，不等同于类型检查。批量清单版本为1，最多256项；单文件读入后最多4MiB，每次批处理缓存最多1024个不同源码、总量64MiB。`moonbitlang/x/fs@0.5.1` 的同步读取接口会先把文件完整读入再检查长度，因此4MiB限制不保证限制超大文件的峰值读入内存。输出限定为清单目录内的相对 `*_wbtest.mbt` 路径，并拒绝词法路径逃逸、保留文件名及手写文件覆盖；已有输出若与任一输入内容完全相同也会保守拒绝，以防止硬链接覆盖。该限制不是符号链接沙箱。
+- 生成错误会在写入前统一报告且不改输出；操作系统写入失败时多文件批次不是事务，JSON报告会标出`written`、`failed`和`not_attempted`，使用者应按报告恢复。
+- 新增订单补偿和缓存回源两组可运行场景，覆盖同步/异步预期、错误传播、调用历史、捕获、顺序、边界校验和清理失败。
+
+清单示例：
+
+```json
+{
+  "schema_version": 1,
+  "jobs": [
+    { "source": "service.mbt", "trait": "Service", "output": "mock_service_wbtest.mbt", "sources": ["base.mbt"] }
+  ]
+}
+```
+
+```sh
+moon-mock inspect service.mbt --json
+moon-mock batch mocks.json
+moon-mock batch mocks.json --check
+```
 
 ## 验证与许可
 
@@ -131,4 +160,6 @@ CI 检查格式、静态检查、生成文件是否过期、JS/native 测试和 
 
 `0.1.0` 已发布到Mooncakes，并实际从公开注册表安装native CLI，在仅包含消费模块的新工作区中完成生成及双后端各10/10测试。 [发行校验值与安装证据](docs/release.md) · [最终验收逐项自查](docs/acceptance.md)
 
-main后续优化的JS/native项目测试各56/56通过，新增类型嵌套边界和延迟诊断回归；公开0.1.0的历史结果仍为各52/52。成功与失败路径的实际性能变化分别保留在[后续复测](docs/benchmarks/followup-2026-11-22.md)。
+截至2026-11-23，本地 Windows 工具链运行 `moon check`、`moon test` 和 `moon build` 的 JS/native 目标；项目测试两目标均为210/210。CLI 兼容脚本各23条命令通过，批量与检查工作流分别执行29条命令通过；主分支新 API 消费方各1/1，兼容消费方及当前源码 ZIP 消费方各10/10。源码规模为84个 MoonBit `.mbt` 文件、9248行，其中生成 mock 836行，非生成 MoonBit 源码/测试/示例/基准共8412行；统计不含 `.mbti` 接口文件、Markdown 和 JS 自动化脚本。主分支 JS/native release 微基准原始输出和限制见[扩展基准报告](docs/benchmarks/main-expansion-2026-11-23.md)。 [测试口径和边界](docs/testing.md)
+
+main 本轮新增的功能尚未发布到 Mooncakes。此前的发行包、注册表验证、双后端微基准和采用记录仍是 `0.1.0` 的历史证据，不能用来代表本轮新功能已发布或经过外部消费方验证。

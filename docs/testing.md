@@ -1,15 +1,20 @@
 # 验证范围与复现
 
-2026-11-22 的本地验证使用固定编译器 `moonc v0.10.18+6c83a7f62`，覆盖 JS 与 Windows native。普通项目测试与微基准分开执行，基准不会增加普通测试的通过数量。
+2026-11-23 的本地验证使用固定编译器 `moonc v0.10.18+6c83a7f62`，覆盖 JS 与 Windows native。普通项目测试与微基准分开执行，基准不会增加普通测试的通过数量。
 
 | 范围 | 每个后端的实际结果 | 复现 |
 | --- | --- | --- |
-| main项目测试 | 56/56；公开0.1.0历史结果为52/52 | `moon test --target js --deny-warn` 或 `--target native` |
-| CLI 验收 | 按平台输出实际命令数，Windows 复核为23条 | `node tools/cli-smoke.mjs js` 或 `native` |
-| 独立消费方 | 10/10，包含96种签名的编译矩阵 | `node tools/consumer-smoke.mjs js` 或 `native` |
-| 发行 ZIP 的全新消费方 | 10/10 | `node tools/package-smoke.mjs js` 或 `native` |
-| Exa SDK 固定版本接入 | 2/2 | 见 adoption.md |
-| moondb 固定版本接入 | 5/5 | 见 adoption.md |
+| 主分支全仓测试 | JS 210/210；Windows native 210/210 | `moon test --target js --deny-warn` 或 `--target native` |
+| 主分支静态检查/构建 | JS/native 各自成功，且 `--deny-warn` | `moon check`、`moon build`，指定 `--target` |
+| 新增 CLI 检查/批量工作流 | JS/native 各执行29条子进程命令并通过 | `node tools/workflow-smoke.mjs js` 或 `native` |
+| 主分支独立消费方 | JS/native 各1/1，实际生成并导入匹配器、调用历史 | `node tools/main-consumer-smoke.mjs js` 或 `native` |
+| 主分支兼容消费方 | JS/native 各10/10，覆盖先前生成 API | `node tools/consumer-smoke.mjs js` 或 `native` |
+| 主分支发行 ZIP 的全新消费方 | JS/native 各10/10；这是当前工作树打包，不是重新发布 | `node tools/package-smoke.mjs js` 或 `native` |
+| 当前 CLI 兼容脚本 | JS/native 各23条命令通过 | `node tools/cli-smoke.mjs js` 或 `native` |
+| 公开0.1.0历史验证 | 独立消费方、发行 ZIP 各10/10；注册表样例10/10 | 见 `release.md` 及 2026-11-22 提交记录 |
+| 真实项目固定版本接入（历史） | Exa SDK 2/2；moondb 5/5 | 见 adoption.md；不代表本轮 main 新增API |
+
+本轮源码规模通过 Git 跟踪文件及非忽略未跟踪 `.mbt` 文件逐行统计：84个文件，共9248行；按生成文件头识别的8个 mock 文件为836行；其余8412行为非生成实现、示例、测试和基准（实现6908行，测试/基准1504行）。`.mbti`、Markdown、JavaScript脚本和构建产物不计入。
 
 消费方脚本须先构建对应目标的 CLI。打包脚本自行创建 ZIP，并在新目录验证发行包构建。native 打包脚本进一步安装 CLI 到临时 bin 后运行帮助命令。ZIP 检查覆盖 LICENSE、清单、缓存排除和路径越界。发行包测试与源码消费方有相同的十项测试，表中分别记录两种分发方式。
 
@@ -36,9 +41,14 @@
 - main后续优化增加64层类型嵌套边界：64层参数和返回值可生成，65层及函数/可选类型混合超限返回resource_limit；随后合法生成正常。该限制约束解析后AST转译，未宣称限制官方解析器的所有资源消耗。
 - 延迟诊断保留完整说明顺序，不重复调用谓词；顺序/次数错误不渲染参数，失败调用不增加次数。
 - Unicode、引号和换行可通过标准 JSON 编码输出。统计快照和捕获数组副本不随之后的计数或数组修改而变化。
+- 通用匹配器覆盖空/边界区间、Unicode 标量长度、前后缀和子串、Option/Result、元组投影、重复值的一一无序分配、空数组、数量上限、短路选择及数组修改通知回归。
+- 调用历史覆盖默认关闭、缓冲区覆盖/丢弃计数、清理后的序号连续、独立快照、成功与拒绝错误码、异步作用域核对和固定种子参考模型。历史结构没有原始实参字段。
+- CLI 工作流覆盖重复JSON键、浮点舍入版本号、未知字段、资源上限、绝对/逃逸路径、重复输出、内容相同的硬链接别名、Windows非法文件名、缺失辅助源码、单项生成失败不落盘、第二输出只读时的部分写入状态报告、损坏语法 JSON 诊断、缺失文件诊断、无效 UTF-8 与超过4MiB输入。上述脚本是有限场景测试，不是模糊测试。
 
 ## 已知验证边界
 
 JS 与 native 均覆盖协作式异步执行。操作系统多线程共享 mock 的同步语义尚未支持。moondb 自身使用较新的 `#derive`，接入用隔离的0.10.20编译器运行，并接受本运行库两条旧式 derive 弃用警告。Windows native 的上游 async C 文件会产生 EINVAL 宏重定义警告。
+
+同步 `moonbitlang/x/fs@0.5.1` 没有文件大小元数据或有界流式读取 API；CLI 在读入后检查4MiB上限，不能防止超大不可信文件在读取阶段造成峰值内存消耗。批次多文件写入也不是事务，部分状态由 JSON 报告暴露。
 
 真实项目接入固定了源码版本，验证的是使用方业务调用和生成的替身是否互相兼容。外部接口的长期网络服务可用性不属于这组离线测试的验收条件。
