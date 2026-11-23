@@ -6,7 +6,23 @@ import {
 }
 
 // Values
+pub const MAX_BATCH_REQUESTS : Int32 = 256
+
 pub fn generate(String, String, filename? : String, mock_name? : String, additional_sources? : Array[(String, String)]) -> String raise GenerationError
+
+pub fn generate_batch(Array[BatchRequest]) -> Array[BatchResult] raise GenerationError
+
+pub fn generate_prepared(PreparedSources, String, mock_name? : String) -> String raise GenerationError
+
+pub fn inspect_source(String, filename? : String) -> Array[TraitInfo] raise GenerationError
+
+pub fn prepare_sources(String, filename? : String, additional_sources? : Array[(String, String)]) -> PreparedSources raise GenerationError
+
+pub fn try_generate(String, String, filename? : String, mock_name? : String, additional_sources? : Array[(String, String)]) -> Result[String, Array[GenerationDiagnostic]]
+
+pub fn try_inspect_source(String, filename? : String) -> Result[Array[TraitInfo], Array[GenerationDiagnostic]]
+
+pub fn validate_batch_requests(Array[BatchRequest]) -> Unit raise GenerationError
 
 // Errors
 pub suberror GenerationError {
@@ -15,6 +31,61 @@ pub suberror GenerationError {
 pub fn GenerationError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub(all) struct BatchRequest {
+  source : String
+  trait_name : String
+  filename : String
+  mock_name : String?
+  additional_sources : Array[(String, String)]
+} derive(@debug.Debug)
+pub fn BatchRequest::to_repr(Self) -> @debug.Repr
+
+pub(all) struct BatchResult {
+  index : Int32
+  trait_name : String
+  filename : String
+  generated : String?
+  error : String?
+} derive(ToJson, @debug.Debug)
+pub fn BatchResult::to_json(Self) -> Json
+pub fn BatchResult::to_repr(Self) -> @debug.Repr
+
+pub struct GenerationDiagnostic {
+  code : String
+  message : String
+  filename : String
+  line : Int32?
+  column : Int32?
+} derive(ToJson, @debug.Debug)
+pub fn GenerationDiagnostic::text(Self) -> String
+pub fn GenerationDiagnostic::to_json(Self) -> Json
+pub fn GenerationDiagnostic::to_repr(Self) -> @debug.Repr
+
+pub struct MethodInfo {
+  name : String
+  line : Int32
+  column : Int32
+  async_ : Bool
+  has_default : Bool
+  parameter_count : Int32
+} derive(ToJson, @debug.Debug)
+pub fn MethodInfo::to_json(Self) -> Json
+pub fn MethodInfo::to_repr(Self) -> @debug.Repr
+
+pub struct PreparedSources {
+  // private fields
+}
+
+pub struct TraitInfo {
+  name : String
+  file : String
+  line : Int32
+  column : Int32
+  parents : Array[String]
+  methods : Array[MethodInfo]
+} derive(ToJson, @debug.Debug)
+pub fn TraitInfo::to_json(Self) -> Json
+pub fn TraitInfo::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

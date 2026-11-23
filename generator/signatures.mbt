@@ -1,12 +1,4 @@
 ///|
-pub suberror GenerationError {
-  GenerationError(String)
-} derive(Debug)
-
-///|
-pub extend GenerationError with Debug::{to_repr}
-
-///|
 priv struct Argument {
   value_type : String
   label : String?
@@ -24,14 +16,13 @@ priv struct Signature {
 }
 
 ///|
-fn unsupported(
+fn[T] unsupported(
   file : String,
   location : @basic.Location,
   reason : String,
-) -> Unit raise GenerationError {
-  let at = location.start
-  raise GenerationError(
-    "\{file}:\{at.lnum}:\{at.column()}: unsupported_signature: \{reason}",
+) -> T raise GenerationFailure {
+  SourceSite::new(file, at=location.start).reject(
+    "unsupported_signature", reason,
   )
 }
 
@@ -39,16 +30,14 @@ fn unsupported(
 fn constructor_name(
   constr_id : @syntax.ConstrId,
   file : String,
-) -> String raise GenerationError {
+) -> String raise GenerationFailure {
   match constr_id.id {
-    Ident(name="Self") => {
+    Ident(name="Self") =>
       unsupported(
         file,
         constr_id.loc,
         "Self 只能出现在首个接收者位置",
       )
-      ""
-    }
     Ident(name~) => name
     Dot(pkg~, id~) => "@" + pkg + "." + id
   }
@@ -75,11 +64,10 @@ fn type_text(
   typ : @syntax.Type,
   file : String,
   depth~ : Int32 = 0,
-) -> String raise GenerationError {
+) -> String raise GenerationFailure {
   if depth > 64 {
-    let at = typ.loc().start
-    raise GenerationError(
-      "\{file}:\{at.lnum}:\{at.column()}: resource_limit: 类型嵌套最多 64 层",
+    return SourceSite::new(file, at=typ.loc().start).reject(
+      "resource_limit", "类型嵌套最多 64 层",
     )
   }
   match typ {
@@ -117,14 +105,12 @@ fn type_text(
       let error = error_type_text(err, async_, file, loc, depth=depth + 1)
       "(" + function_type_text(params.join(", "), returns, error, async_) + ")"
     }
-    _ => {
+    _ =>
       unsupported(
         file,
         typ.loc(),
         "支持命名类型、类型应用、trait 对象、元组、可选类型和函数类型",
       )
-      ""
-    }
   }
 }
 
@@ -135,16 +121,14 @@ fn error_type_text(
   file : String,
   location : @basic.Location,
   depth~ : Int32 = 0,
-) -> String? raise GenerationError {
+) -> String? raise GenerationFailure {
   match err {
     @syntax.ErrorType(ty~) => Some(type_text(ty, file, depth~))
     DefaultErrorType(_) => Some("Error")
     NoErrorType if async_ => Some("Error")
     NoErrorType | Noraise(_) => None
-    MaybeError(_) => {
+    MaybeError(_) =>
       unsupported(file, location, "暂不支持条件错误效果")
-      None
-    }
   }
 }
 
@@ -160,7 +144,7 @@ fn positional_type(arg : @syntax.Parameter) -> @syntax.Type? {
 fn collect_argument(
   arg : @syntax.Parameter,
   file : String,
-) -> Argument? raise GenerationError {
+) -> Argument? raise GenerationFailure {
   match arg {
     DiscardPositional(ty=Some(ty), ..) | Positional(ty=Some(ty), ..) =>
       Some({ value_type: type_text(ty, file), label: None, optional: false, })
@@ -176,14 +160,12 @@ fn collect_argument(
         label: Some(binder.name),
         optional: true,
       })
-    _ => {
+    _ =>
       unsupported(
         file,
         arg.loc(),
         "要求带类型的位置参数或标签参数",
       )
-      None
-    }
   }
 }
 
@@ -192,7 +174,7 @@ fn collect_signature(
   declared_method : @syntax.TraitMethodDecl,
   file : String,
   owner : String,
-) -> Signature raise GenerationError {
+) -> Signature raise GenerationFailure {
   if !(declared_method.quantifiers is @list.Empty) {
     unsupported(file, declared_method.loc, "暂不支持方法泛型")
   }

@@ -11,31 +11,44 @@ priv struct Hierarchy {
 }
 
 ///|
-fn index_traits(
-  index : Map[String, Array[TraitSource]],
+fn parse_traits(
   source : String,
   filename : String,
-) -> Unit raise GenerationError {
+) -> Array[TraitSource] raise GenerationFailure {
   let (declarations, errors) = @parser.parse_string(
     source,
     name=filename,
     parser=Handrolled,
   )
   if !errors.is_empty() {
-    let details = errors.map(report => {
-      let at = report.loc.start
-      "\{filename}:\{at.lnum}:\{at.column()}: parse_error: \{report.msg}"
+    let diagnostics = errors.map(report => {
+      SourceSite::new(filename, at=report.loc.start).diagnostic(
+        "parse_error",
+        report.msg,
+      )
     })
-    raise GenerationError(details.join("\n"))
+    raise GenerationFailure(diagnostics)
   }
+  let traits = []
   for entry in declarations.iter() {
     if entry is @syntax.TopTrait(declaration) {
-      let name = declaration.name.name
-      let source = { filename, declaration, }
-      match index.get(name) {
-        Some(matches) => matches.push(source)
-        None => index[name] = [source]
-      }
+      traits.push({ filename, declaration, })
+    }
+  }
+  traits
+}
+
+///|
+fn index_traits(
+  index : Map[String, Array[TraitSource]],
+  source : String,
+  filename : String,
+) -> Unit raise GenerationFailure {
+  for entry in parse_traits(source, filename) {
+    let name = entry.declaration.name.name
+    match index.get(name) {
+      Some(matches) => matches.push(entry)
+      None => index[name] = [entry]
     }
   }
 }
@@ -44,20 +57,19 @@ fn index_traits(
 fn locate_trait(
   index : Map[String, Array[TraitSource]],
   name : String,
-  reference : String,
+  reference : SourceSite,
   missing_code : String,
-) -> TraitSource raise GenerationError {
+) -> TraitSource raise GenerationFailure {
   guard index.get(name) is Some(matches) else {
-    raise GenerationError("\{reference}: \{missing_code}: \{name}")
+    return reference.reject(missing_code, name)
   }
   guard matches is [source] else {
     let locations = matches.map(source => {
-      let at = source.declaration.name.loc.start
-      "\{source.filename}:\{at.lnum}:\{at.column()}"
+      SourceSite::new(source.filename, at=source.declaration.name.loc.start).text()
     })
-    raise GenerationError(
-      "\{reference}: ambiguous_trait: \{name} 声明于 " +
-      locations.join("、"),
+    return reference.reject(
+      "ambiguous_trait",
+      "\{name} 声明于 " + locations.join("、"),
     )
   }
   source
@@ -68,7 +80,7 @@ priv struct HierarchyWalk {
   index : Map[String, Array[TraitSource]]
   active : Array[String]
   collected : Map[String, Bool]
-  owners : Map[String, (String, String)]
+  owners : Map[String, (String, SourceSite)]
   result : Hierarchy
 }
 
@@ -76,8 +88,8 @@ priv struct HierarchyWalk {
 fn HierarchyWalk::visit(
   self : HierarchyWalk,
   source : TraitSource,
-  reference : String,
-) -> Unit raise GenerationError {
+  reference : SourceSite,
+) -> Unit raise GenerationFailure {
   let { filename, declaration, } = source
   let name = declaration.name.name
   if self.collected.contains(name) {
@@ -85,12 +97,10 @@ fn HierarchyWalk::visit(
   }
   if self.active.contains(name) {
     let path = self.active.join(" -> ") + " -> " + name
-    raise GenerationError("\{reference}: trait_cycle: " + path)
+    reference.reject("trait_cycle", path)
   }
   if self.active.length() >= 128 {
-    raise GenerationError(
-      "\{reference}: resource_limit: 继承深度最多 128 层",
-    )
+    reference.reject("resource_limit", "继承深度最多 128 层")
   }
   if declaration.is_declare || !(declaration.attrs is @list.Empty) {
     unsupported(
@@ -101,8 +111,7 @@ fn HierarchyWalk::visit(
   }
   self.active.push(name)
   for parent in declaration.supers.iter() {
-    let at = parent.loc.start
-    let parent_site = "\{filename}:\{at.lnum}:\{at.column()}"
+    let parent_site = SourceSite::new(filename, at=parent.loc.start)
     match parent.trait_ {
       Ident(name=parent_name) => {
         let parent_source = locate_trait(
@@ -122,11 +131,11 @@ fn HierarchyWalk::visit(
   }
   for declared_method in declaration.methods.iter() {
     let method_name = declared_method.name.name
-    let at = declared_method.loc.start
-    let site = "\{filename}:\{at.lnum}:\{at.column()}"
+    let site = SourceSite::new(filename, at=declared_method.loc.start)
     if self.owners.get(method_name) is Some((other, previous_site)) {
-      raise GenerationError(
-        "\{site}: method_conflict: \{other}.\{method_name}（\{previous_site}）与 \{name}.\{method_name}（\{site}）同名",
+      site.reject(
+        "method_conflict",
+        "\{other}.\{method_name}（\{previous_site.text()}）与 \{name}.\{method_name}（\{site.text()}）同名",
       )
     }
     self.owners[method_name] = (name, site)
@@ -138,18 +147,13 @@ fn HierarchyWalk::visit(
 
 ///|
 fn collect(
-  source : String,
+  prepared : PreparedSources,
   name : String,
-  file : String,
-  additional_sources : Array[(String, String)],
-) -> Hierarchy raise GenerationError {
-  let index : Map[String, Array[TraitSource]] = Map([])
-  index_traits(index, source, file)
-  let root = locate_trait(index, name, file, "trait_not_found")
-  for (extra_file, extra_source) in additional_sources {
-    index_traits(index, extra_source, extra_file)
-  }
-  let root = locate_trait(index, name, root.filename, "trait_not_found")
+) -> Hierarchy raise GenerationFailure {
+  let { filename, primary, all_traits: index, } = prepared
+  let reference = SourceSite::new(filename)
+  locate_trait(primary, name, reference, "trait_not_found") |> ignore
+  let root = locate_trait(index, name, reference, "trait_not_found")
   let walk : HierarchyWalk = {
     index,
     active: [],
@@ -157,10 +161,10 @@ fn collect(
     owners: Map([]),
     result: { methods: [], empty_traits: [], },
   }
-  walk.visit(root, file)
+  walk.visit(root, reference)
   if walk.result.methods.is_empty() {
     unsupported(
-      file,
+      filename,
       root.declaration.loc,
       "trait 及其继承链没有可生成的方法",
     )

@@ -84,6 +84,26 @@ fn valid_type_name(name : String) -> Bool {
 }
 
 ///|
+fn mock_type_name(trait_name : String, mock_name : String?) -> String {
+  mock_name.unwrap_or("Mock" + trait_name)
+}
+
+///|
+fn checked_mock_name(
+  trait_name : String,
+  mock_name : String?,
+  filename : String,
+) -> String raise GenerationFailure {
+  let mock = mock_type_name(trait_name, mock_name)
+  if mock_name is Some(_) && !valid_type_name(mock) {
+    return SourceSite::new(filename).reject(
+      "invalid_mock_name", "生成类型名应以大写字母开头",
+    )
+  }
+  mock
+}
+
+///|
 /// 生成同包白盒测试使用的 MoonBit 源码。
 /// 辅助源码按（文件名，源码）传入，可用于解析同包的超 trait。
 pub fn generate(
@@ -93,13 +113,53 @@ pub fn generate(
   mock_name? : String,
   additional_sources~ : Array[(String, String)] = [],
 ) -> String raise GenerationError {
-  let mock = mock_name.unwrap_or("Mock" + trait_name)
-  if mock_name is Some(_) && !valid_type_name(mock) {
-    raise GenerationError(
-      filename + ": invalid_mock_name: 生成类型名应以大写字母开头",
-    )
+  generate_source(source, trait_name, filename, mock_name, additional_sources) catch {
+    GenerationFailure(diagnostics) => raise legacy_error(diagnostics)
   }
-  let hierarchy = collect(source, trait_name, filename, additional_sources)
+}
+
+///|
+/// 生成源码并以结构化形式返回诊断。解析器可以报告多条语法错误。
+/// 用法和生成规则与 generate 相同。
+pub fn try_generate(
+  source : String,
+  trait_name : String,
+  filename~ : String = "<stdin>",
+  mock_name? : String,
+  additional_sources~ : Array[(String, String)] = [],
+) -> Result[String, Array[GenerationDiagnostic]] {
+  Ok(
+    generate_source(source, trait_name, filename, mock_name, additional_sources),
+  ) catch {
+    GenerationFailure(diagnostics) => Err(diagnostics)
+  }
+}
+
+///|
+fn generate_source(
+  source : String,
+  trait_name : String,
+  filename : String,
+  mock_name : String?,
+  additional_sources : Array[(String, String)],
+) -> String raise GenerationFailure {
+  let mock = checked_mock_name(trait_name, mock_name, filename)
+  let prepared = prepare_source_set(
+    source,
+    filename,
+    additional_sources,
+    require_primary=trait_name,
+  )
+  emit_prepared(prepared, trait_name, mock)
+}
+
+///|
+fn emit_prepared(
+  prepared : PreparedSources,
+  trait_name : String,
+  mock : String,
+) -> String raise GenerationFailure {
+  let hierarchy = collect(prepared, trait_name)
   let out = StringBuilder()
   out.write_string(
     "// 由 moon-mock 生成，请从原 trait 重新生成。\n\n",
@@ -128,8 +188,9 @@ pub fn generate(
   let generated = out.to_string()
   let (_, errors) = @parser.parse_string(generated, parser=Handrolled)
   if !errors.is_empty() {
-    raise GenerationError(
-      "emitter_error: " + errors.map(report => report.msg).join("; "),
+    return SourceSite::new(prepared.filename).reject(
+      "emitter_error",
+      errors.map(report => report.msg).join("; "),
     )
   }
   let formatted = @sourcefmt.format(generated, block_line=true)
