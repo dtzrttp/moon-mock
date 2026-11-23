@@ -4,12 +4,19 @@ priv suberror UsageError {
 }
 
 ///|
+priv suberror BatchError {
+  BatchError(String)
+}
+
+///|
 let usage =
   #|用法：
   #|  moon-mock generate <文件.mbt> <Trait> [--mock-name <类型名>]
   #|      [--source <同包辅助源码.mbt>]...
   #|      [--output <生成文件_wbtest.mbt> | --check <生成文件_wbtest.mbt>]
   #|  moon-mock --help
+  #|  moon-mock inspect <文件.mbt> [--json]
+  #|  moon-mock batch <清单.json> [--check]
 
 ///|
 #cfg(target="js")
@@ -30,9 +37,15 @@ fn normalized(source : String) -> String {
 
 ///|
 fn read_source(path : String) -> String raise @fs.IOError {
-  @fs.read_file_to_string(path) catch {
+  let bytes = @fs.read_file_to_bytes(path) catch {
     @fs.IOError(message) =>
       raise @fs.IOError("source_read_error: \{path}: \{message}")
+  }
+  if bytes.length() > 4194304 {
+    raise @fs.IOError("source_too_large: \{path}: 最多4194304字节")
+  }
+  @utf8.decode(bytes[:]) catch {
+    _ => raise @fs.IOError("source_invalid_utf8: \{path}")
   }
 }
 
@@ -56,6 +69,18 @@ fn contains_trait(source : String) -> Bool {
 fn run(args : ArrayView[String]) -> Unit raise {
   if args is ["--help"] || args is ["-h"] {
     println(usage)
+    return
+  }
+  if args is ["inspect", source_file, .. options] {
+    inspect_command(source_file, options)
+    return
+  }
+  if args is ["batch", manifest, .. options] {
+    match options {
+      [] => batch_command(manifest, false)
+      ["--check"] => batch_command(manifest, true)
+      _ => raise UsageError(usage)
+    }
     return
   }
   guard args is ["generate", source_file, trait_name, .. options] else {
@@ -140,6 +165,10 @@ fn main {
     UsageError(message) => {
       eprintln(message)
       @sys.exit(2)
+    }
+    BatchError(message) => {
+      eprintln(message)
+      @sys.exit(1)
     }
     @generator.GenerationError(message) => {
       eprintln(message)

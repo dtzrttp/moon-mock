@@ -1,7 +1,9 @@
 import {
   "dtzrttp/moon-mock/generator",
   "moonbitlang/core/debug",
+  "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/env",
+  "moonbitlang/core/json",
   "moonbitlang/x/fs",
   "moonbitlang/x/sys",
   "moonbitlang/x/path",
