@@ -1,0 +1,55 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dtzrttp/moon-mock/examples/cache"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub async fn[C : CacheStore, O : Origin] load(C, O, String, CachePolicy) -> LoadedValue raise CacheError
+
+// Errors
+pub suberror CacheError {
+  InvalidConfig(String)
+  ReadUnavailable
+  WriteUnavailable
+  OriginUnavailable
+  PayloadTooLarge
+} derive(@debug.Debug)
+pub fn CacheError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub(all) struct CachePolicy {
+  ttl_seconds : Int32
+  fallback_on_read_error : Bool
+  write_required : Bool
+  max_payload_chars : Int32
+}
+
+pub(all) struct CacheWarning {
+  phase : String
+  cause : CacheError
+}
+
+pub(all) struct LoadedValue {
+  value : String
+  source : ValueSource
+  warnings : Array[CacheWarning]
+}
+
+pub enum ValueSource {
+  CacheHit
+  OriginFetch
+}
+
+// Type aliases
+
+// Traits
+pub(open) trait CacheStore {
+  fn get(Self, String) -> String? raise CacheError
+  fn put(Self, String, String, ttl~ : Int32) -> Unit raise CacheError
+}
+
+pub(open) trait Origin {
+  async fn fetch(Self, String) -> String raise CacheError
+}

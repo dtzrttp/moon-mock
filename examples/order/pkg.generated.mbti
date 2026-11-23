@@ -1,0 +1,74 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dtzrttp/moon-mock/examples/order"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn[I : Inventory, P : Payments, O : Orders] checkout(I, P, O, OrderRequest) -> Result[PlacedOrder, CheckoutFailure]
+
+pub async fn[I : Inventory, P : Payments, O : Orders, N : Notifications] submit_order(I, P, O, N, OrderRequest) -> Result[DeliveryResult, CheckoutFailure]
+
+// Errors
+pub suberror CheckoutError {
+  InvalidRequest(String)
+  NoStock
+  ChargeDeclined
+  StoreUnavailable
+  CleanupUnavailable
+  NotificationUnavailable
+} derive(@debug.Debug)
+pub fn CheckoutError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub(all) struct CheckoutFailure {
+  phase : String
+  cause : CheckoutError
+  cleanup_errors : Array[(String, CheckoutError)]
+}
+
+pub(all) struct DeliveryResult {
+  order : PlacedOrder
+  notification_pending : Bool
+}
+
+pub(all) struct OrderRequest {
+  key : String
+  sku : String
+  quantity : Int32
+  unit_price : Int32
+}
+
+pub(all) struct PlacedOrder {
+  key : String
+  sku : String
+  quantity : Int32
+  amount : Int32
+  reservation : String
+  receipt : String
+} derive(Eq, @debug.Debug)
+pub fn PlacedOrder::equal(Self, Self) -> Bool
+pub fn PlacedOrder::not_equal(Self, Self) -> Bool
+pub fn PlacedOrder::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits
+pub(open) trait Inventory {
+  fn reserve(Self, String, Int32) -> String raise CheckoutError
+  fn release(Self, String) -> Unit raise CheckoutError
+}
+
+pub(open) trait Notifications {
+  async fn publish(Self, PlacedOrder) -> Unit raise CheckoutError
+}
+
+pub(open) trait Orders {
+  fn save(Self, PlacedOrder) -> Unit raise CheckoutError
+}
+
+pub(open) trait Payments {
+  fn charge(Self, String, Int32) -> String raise CheckoutError
+  fn refund(Self, String) -> Unit raise CheckoutError
+}
