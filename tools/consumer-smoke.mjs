@@ -22,7 +22,7 @@ writeFileSync(join(sandbox, 'moon.work'), 'members = ["consumer", "dependency"]\
 writeFileSync(join(consumer, 'moon.mod'), [
   'name = "dtzrttp/mock_consumer"',
   'version = "0.1.0"',
-  'import { "dtzrttp/moon-mock@0.1.0", "moonbitlang/async@0.22.4" }',
+  'import { "dtzrttp/moon-mock@0.2.0", "moonbitlang/async@0.22.4" }',
   '',
 ].join('\n'));
 writeFileSync(join(consumer, 'moon.pkg'), [

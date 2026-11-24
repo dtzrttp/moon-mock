@@ -16,9 +16,12 @@ function run(program, args, cwd) {
 }
 
 run('moon', ['package'], root);
+const moduleManifest = readFileSync(join(root, 'moon.mod'), 'utf8');
+const moduleVersion = moduleManifest.match(/^version = "([^"]+)"$/m)?.[1];
+assert(moduleVersion, 'moon.mod 必须声明模块版本');
 const archives = readdirSync(join(root, '_build', 'publish'))
-  .filter(name => name.startsWith('dtzrttp-moon-mock-') && name.endsWith('.zip'));
-assert.equal(archives.length, 1, '发行包目录应只包含一个待验证版本');
+  .filter(name => name === `dtzrttp-moon-mock-${moduleVersion}.zip`);
+assert.equal(archives.length, 1, `发行包目录应包含当前模块版本 ${moduleVersion}`);
 const archive = join(root, '_build', 'publish', archives[0]);
 const listing = process.platform === 'win32'
   ? run('tar', ['-tf', archive], root)

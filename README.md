@@ -18,8 +18,8 @@ moon test --target js --deny-warn
 从 Mooncakes 安装固定版本的 native CLI 到指定目录，并在使用方添加运行库依赖。
 
 ```sh
-moon install dtzrttp/moon-mock/cmd/moon-mock@0.1.0 --bin ./.bin
-moon add dtzrttp/moon-mock@0.1.0
+moon install dtzrttp/moon-mock/cmd/moon-mock@0.2.0 --bin ./.bin
+moon add dtzrttp/moon-mock@0.2.0
 ```
 
 执行时，Linux/macOS 使用 `./.bin/moon-mock`，Windows 使用 `.\.bin\moon-mock.exe`。命令行生成器需要平台 C 工具链，生成结果及运行库已验证 JS 和 native。也可以按照下文的工作区方式使用本地源码。
@@ -29,7 +29,7 @@ moon add dtzrttp/moon-mock@0.1.0
 moon test --target js --deny-warn
 ```
 
-其中 `traits.mbt` 和 `Repository` 替换为自己的源码文件及 trait 名称，白盒测试导入见下一节。在本仓库执行 `node tools/registry-smoke.mjs 0.1.0` 可以从公开注册表下载、安装 CLI，并在全新模块生成三份 mock 后运行双后端测试。
+其中 `traits.mbt` 和 `Repository` 替换为自己的源码文件及 trait 名称，白盒测试导入见下一节。在本仓库执行 `node tools/registry-smoke.mjs 0.2.0` 可以从公开注册表下载、安装 CLI，并在全新模块生成三份 mock 后运行双后端测试。
 
 在本仓库生成事务示例的 mock，在相同包的白盒测试中使用：
 
@@ -50,7 +50,7 @@ import {
 } for "wbtest"
 ```
 
-本地接入时，把消费方和本仓库放在同一个 `moon.work` 的 `members` 中，再在消费方的 `moon.mod` 中写 `import { "dtzrttp/moon-mock@0.1.0" }`。独立消费方测试复现了该配置。生成器使用官方解析器，运行库本身无需导入解析器。 [MoonBit 工作区说明](https://docs.moonbitlang.com/en/latest/toolchain/moon/workspace.html)
+本地接入时，把消费方和本仓库放在同一个 `moon.work` 的 `members` 中，再在消费方的 `moon.mod` 中写 `import { "dtzrttp/moon-mock@0.2.0" }`。独立消费方测试复现了该配置。生成器使用官方解析器，运行库本身无需导入解析器。 [MoonBit 工作区说明](https://docs.moonbitlang.com/en/latest/toolchain/moon/workspace.html)
 
 下面的测试使用示例包的 `Transaction` trait。写入失败后，测试会确认业务代码回滚且没有提交。
 
@@ -123,9 +123,9 @@ mock.expect_lookup(@mock_runtime.equal_to(42), "book", count=@mock_runtime.CallC
 
 匹配器支持 `and_`、`or_`、`not_`、`project` 和 `one_of`。通过 `Capture::matcher` 可以记录成功选中的调用参数。控制器提供不可变计数快照及带版本的 JSON 报告。继承冲突会同时定位两个声明，继承深度上限为 128 层。完整生成、预期配置、异步生命周期与 CI 过程见 [使用指南](docs/usage.md)。
 
-## main 分支的未发行扩展
+## 0.2.0 新增功能
 
-以下功能已在本仓库主分支实现，尚未包含在 Mooncakes `0.1.0` 中。按上面的固定版本安装时不会得到这些新 API；它们需要从当前源码构建。发布版本不会被主分支改写。
+以下功能构成 `0.2.0` 相对 `0.1.0` 的新增内容。`0.1.0` 的发行包保持不变；使用这些新 API 时，请安装 `0.2.0`。历史发行证据与本次版本校验记录见[发行记录](docs/release.md)。
 
 - `matchers` 包新增字符串前后缀/子串、Unicode 码点长度、整数区间、Option/Result、二元组投影、数组逐项与无序一一匹配器。无序匹配最多处理128项；数组构造会复制匹配器列表。
 - `Controller::with_history` 开启有界循环调用历史；未启用时不记录。历史只保留方法名、成功/拒绝、错误码及期望序号，不保存参数、返回值或错误详情。容量范围为1至65536，可清理、导出 JSON，并可通过同步/异步作用域辅助函数自动核对未满足的调用。
@@ -158,8 +158,8 @@ CI 检查格式、静态检查、生成文件是否过期、JS/native 测试和 
 
 六个真实接口和三个合成接口的 CLI 基准分两批记录396个墙钟样本，其中264个来自真实接口，并保存运行库变更前后的双后端微基准。两批结果分别统计，包含环境、提交、输入输出哈希及实际采样方法。 [发行前实测](docs/benchmarks/release-0.1.0.md) · [历史与微基准](docs/benchmarks/2026-11-22.md) · [复现方法](docs/benchmarks/README.md)
 
-`0.1.0` 已发布到Mooncakes，并实际从公开注册表安装native CLI，在仅包含消费模块的新工作区中完成生成及双后端各10/10测试。 [发行校验值与安装证据](docs/release.md) · [最终验收逐项自查](docs/acceptance.md)
+`0.1.0` 已发布到Mooncakes，并实际从公开注册表安装native CLI，在仅包含消费模块的新工作区中完成生成及双后端各10/10测试；`0.2.0` 的发行校验值和独立安装结果见[发行记录](docs/release.md)。 [最终验收逐项自查](docs/acceptance.md)
 
 截至2026-11-23，本地 Windows 工具链运行 `moon check`、`moon test` 和 `moon build` 的 JS/native 目标；项目测试两目标均为210/210。CLI 兼容脚本各23条命令通过，批量与检查工作流分别执行29条命令通过；主分支新 API 消费方各1/1，兼容消费方及当前源码 ZIP 消费方各10/10。源码规模为84个 MoonBit `.mbt` 文件、9248行，其中生成 mock 836行，非生成 MoonBit 源码/测试/示例/基准共8412行；统计不含 `.mbti` 接口文件、Markdown 和 JS 自动化脚本。主分支 JS/native release 微基准原始输出和限制见[扩展基准报告](docs/benchmarks/main-expansion-2026-11-23.md)。 [测试口径和边界](docs/testing.md)
 
-main 本轮新增的功能尚未发布到 Mooncakes。此前的发行包、注册表验证、双后端微基准和采用记录仍是 `0.1.0` 的历史证据，不能用来代表本轮新功能已发布或经过外部消费方验证。
+`0.1.0` 的发行包、注册表验证、双后端微基准和采用记录仍是旧版历史证据；本轮新增功能的公开包与注册表消费验证以 `0.2.0` 的发行记录为准。

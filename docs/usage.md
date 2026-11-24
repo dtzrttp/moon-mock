@@ -133,7 +133,7 @@ assert_true(tags.matches(["有效会员", "有效库存"]))
 
 ## 发行包验证
 
-main后续优化在AST转译阶段限制类型嵌套最多64层，嵌套类型参数、元组成员、可选类型、函数参数/返回/错误类型沿各自路径累计层数。超限返回带文件、行列的`resource_limit`。继承深度仍最多128层。这不是对官方解析器的完全资源隔离。该后续优化尚未包含在公开0.1.0中。
+0.2.0在AST转译阶段限制类型嵌套最多64层，嵌套类型参数、元组成员、可选类型、函数参数/返回/错误类型沿各自路径累计层数。超限返回带文件、行列的`resource_limit`。继承深度仍最多128层。这不是对官方解析器的完全资源隔离；公开0.1.0不包含这些后续优化。
 
 ```sh
 moon package --list
@@ -141,4 +141,4 @@ node tools/package-smoke.mjs js
 node tools/package-smoke.mjs native
 ```
 
-脚本检查 ZIP 的源码、许可证及路径，解压到新的临时目录，再从发行包构建 CLI 并在全新消费模块执行十项接入测试。native 流程还通过 `moon install ./cmd/moon-mock --bin <临时目录>` 验证安装产物可执行。`node tools/registry-smoke.mjs 0.1.0` 进一步从公开注册表下载运行库与 CLI，在没有本地模块替换的全新工作区验证生成和双后端测试。
+脚本检查 ZIP 的源码、许可证及路径，解压到新的临时目录，再从发行包构建 CLI 并在全新消费模块执行十项接入测试。native 流程还通过 `moon install ./cmd/moon-mock --bin <临时目录>` 验证安装产物可执行。`node tools/registry-smoke.mjs 0.2.0` 进一步从公开注册表下载运行库与 CLI，在没有本地模块替换的全新工作区验证生成和双后端测试。

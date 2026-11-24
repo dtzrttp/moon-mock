@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const version = process.argv[2] ?? '0.1.0';
+const version = process.argv[2] ?? '0.2.0';
 assert(/^\d+\.\d+\.\d+$/.test(version), '版本应为三段数字');
 const sandbox = mkdtempSync(join(root, '_build', 'registry-consumer-'));
 const consumer = join(sandbox, 'consumer');
