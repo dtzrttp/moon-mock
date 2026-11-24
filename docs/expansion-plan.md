@@ -37,4 +37,4 @@
 
 ## 分工与集成
 
-matchers仅修改新matchers目录；history仅修改runtime；inspection/batch仅修改generator；主任务负责CLI、示例、集成脚本和文档。各任务只读其他目录接口，提交由主任务统一进行。注册表0.1.0记录作为历史保留，新能力的0.2.0发布结果见[发行记录](release.md)。
+matchers仅修改新matchers目录；history仅修改runtime；inspection/batch仅修改generator；主任务负责CLI、示例、集成脚本和文档。各任务只读其他目录接口，提交由主任务统一进行。注册表0.1.0记录作为历史保留。新增能力已随0.2.0发布；公开注册表安装、双后端消费结果和校验值见[发行记录](release.md)。

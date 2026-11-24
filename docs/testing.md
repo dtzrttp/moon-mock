@@ -12,6 +12,7 @@
 | 主分支发行 ZIP 的全新消费方 | JS/native 各10/10；这是当前工作树打包，不是重新发布 | `node tools/package-smoke.mjs js` 或 `native` |
 | 当前 CLI 兼容脚本 | JS/native 各23条命令通过 | `node tools/cli-smoke.mjs js` 或 `native` |
 | 公开0.1.0历史验证 | 独立消费方、发行 ZIP 各10/10；注册表样例10/10 | 见 `release.md` 及 2026-11-22 提交记录 |
+| 公开0.2.0注册表验证 | 公开安装CLI并生成/检查三份mock；JS/native消费方各10/10 | `node tools/registry-smoke.mjs 0.2.0`；证据见 `releases/0.2.0-install.json` |
 | 真实项目固定版本接入（历史） | Exa SDK 2/2；moondb 5/5 | 见 adoption.md；不代表本轮 main 新增API |
 
 本轮源码规模通过 Git 跟踪文件及非忽略未跟踪 `.mbt` 文件逐行统计：84个文件，共9248行；按生成文件头识别的8个 mock 文件为836行；其余8412行为非生成实现、示例、测试和基准（实现6908行，测试/基准1504行）。`.mbti`、Markdown、JavaScript脚本和构建产物不计入。
@@ -20,7 +21,7 @@
 
 验收复核将96种签名放进同一消费模块，经实际编译器检查生成的每个实现，并调用其中一个同步方法。该检查补充原有96种签名单测的解析及确定性验证。CLI 的额外用例检查路径规范化、Windows大小写及硬链接，确保输入源码不会被输出覆盖。
 
-本轮已实际执行 `node tools/registry-smoke.mjs 0.1.0`，从公开注册表独立下载 CLI 与运行库，生成三份 mock 并对同一组十项测试执行 JS/native 验证，各10/10通过。该工作区只声明消费模块，没有本地模块替换。元数据、校验值和依赖树见[发行记录](release.md)。Linux CI另实际执行每后端22条CLI命令，比Windows少一项大小写别名检查。
+2026-11-24已实际执行 `node tools/registry-smoke.mjs 0.2.0`，从公开注册表独立下载 CLI 与运行库，生成并检查三份 mock，再对同一组十项测试执行 JS/native 验证，各10/10通过。消费工作区没有本地模块替换；元数据、依赖树和输出见[发行记录](release.md)及脱敏证据文件。0.1.0的同类结果保留为历史记录。Linux CI另实际执行每后端22条CLI命令，比Windows少一项大小写别名检查。
 
 ## 参考模型和变更测试
 
