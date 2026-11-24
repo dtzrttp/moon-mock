@@ -2,6 +2,21 @@
 
 moon-mock 把 MoonBit trait 生成类型安全的测试替身。测试可指定参数、次数、顺序、返回值和错误，用于隔离数据库、网络传输等依赖。生成结果是普通 MoonBit 源码，可直接与项目一起编译、审查和调试。
 
+## 项目结构
+
+| 路径 | 内容 |
+| --- | --- |
+| `generator/` | 基于 MoonBit 官方解析器读取 trait、检查声明并生成 mock 源码 |
+| `runtime/` | 调用控制器、参数匹配、次数与顺序约束、调用历史和诊断 |
+| `matchers/` | 可组合的值、集合、区间、变体及投影匹配器 |
+| `cmd/moon-mock/` | `generate`、`inspect`、`batch` 命令行入口 |
+| `examples/` | 事务、异步传输、订单补偿、缓存回源等端到端示例 |
+| `tools/` | CLI、独立消费方、发行包、仓库结构和边界行为验证脚本 |
+| `docs/` | 使用说明、测试口径、发行证据、基准、采用记录和自查报告 |
+| `.github/workflows/ci.yml` | 固定 MoonBit 工具链，对 JS/native 运行格式、检查、测试、构建及消费方流程 |
+
+当前发布版本为 Mooncakes `0.2.0`，Git 标签为 [`v0.2.0`](https://github.com/dtzrttp/moon-mock/tree/v0.2.0)，对应源码提交 [`378d0e10f2d1bcd19faa8321ca34cf779fda933d`](https://github.com/dtzrttp/moon-mock/commit/378d0e10f2d1bcd19faa8321ca34cf779fda933d)。主分支还包含该版本之后的文档和验证记录；发行包与主分支不可混为一谈。已验证的 MoonBit 编译器为 `moonc v0.10.18+6c83a7f62`；JS 和 native 均有本地验证及 CI 覆盖。macOS、Wasm/WASI 等其他平台或后端尚未单独验证。
+
 ## 快速运行
 
 准备与本项目验证一致的 MoonBit 工具链（`moonc v0.10.18+6c83a7f62`）。运行 JS 目标需要 Node.js，运行 native 目标需要平台的 C 工具链。 [MoonBit 安装说明](https://www.moonbitlang.com/download)
@@ -150,16 +165,31 @@ moon-mock batch mocks.json
 moon-mock batch mocks.json --check
 ```
 
-## 验证与许可
+## 验证、发布与许可
 
-CI 检查格式、静态检查、生成文件是否过期、JS/native 测试和 CLI 构建。构建后执行 `node tools/cli-smoke.mjs js` 和 `node tools/cli-smoke.mjs native` 验收 CLI。`node tools/consumer-smoke.mjs js` 和 `node tools/consumer-smoke.mjs native` 验证另一个 MoonBit 模块从生成到运行的流程。项目采用 Apache-2.0。 [来源与依赖许可](NOTICE.md)
+### 当前验证
 
-2026-11-22 验收复核中，JS/native 各通过52项项目测试和10项独立模块测试。CLI 新增路径别名及硬链接覆盖保护，Windows 实际执行23条验收命令。96种签名组合全部进入消费模块的实际编译验收。发行包解压后再次运行同组测试，native 另验证独立安装。固定种子的模型对照覆盖32000次调用。 [测试口径和边界](docs/testing.md)
+截至 2026-11-24，固定工具链 `moonc v0.10.18+6c83a7f62` 在 Windows 本地与 Ubuntu CI 覆盖 JS/native。CI 对每个目标执行 `moon fmt --check`、`moon check --deny-warn`、`moon test --deny-warn`、`moon build --deny-warn`、CLI 与批量工作流、独立消费方和发行 ZIP 检查。最近一次完整本地结果及复现命令见[测试口径与边界](docs/testing.md)，当前仓库的逐项检查见[验收自查](docs/acceptance.md)。
 
-六个真实接口和三个合成接口的 CLI 基准分两批记录396个墙钟样本，其中264个来自真实接口，并保存运行库变更前后的双后端微基准。两批结果分别统计，包含环境、提交、输入输出哈希及实际采样方法。 [发行前实测](docs/benchmarks/release-0.1.0.md) · [历史与微基准](docs/benchmarks/2026-11-22.md) · [复现方法](docs/benchmarks/README.md)
+`0.2.0` 已发布到公开 Mooncakes 注册表。发行源码提交、SHA-256、依赖解析和从公开注册表安装后的独立消费结果见[发行记录](docs/release.md)及[原始安装证据](docs/releases/0.2.0-install.json)。历史版 `0.1.0` 的数据保留在发行记录和带日期的文档中，不代表当前版本结果。
 
-`0.1.0` 已发布到Mooncakes，并实际从公开注册表安装native CLI，在仅包含消费模块的新工作区中完成生成及双后端各10/10测试；`0.2.0` 的发行校验值和独立安装结果见[发行记录](docs/release.md)。 [最终验收逐项自查](docs/acceptance.md)
+### MoonBit 源码规模
 
-截至2026-11-23，本地 Windows 工具链运行 `moon check`、`moon test` 和 `moon build` 的 JS/native 目标；项目测试两目标均为210/210。CLI 兼容脚本各23条命令通过，批量与检查工作流分别执行29条命令通过；主分支新 API 消费方各1/1，兼容消费方及当前源码 ZIP 消费方各10/10。源码规模为84个 MoonBit `.mbt` 文件、9248行，其中生成 mock 836行，非生成 MoonBit 源码/测试/示例/基准共8412行；统计不含 `.mbti` 接口文件、Markdown 和 JS 自动化脚本。主分支 JS/native release 微基准原始输出和限制见[扩展基准报告](docs/benchmarks/main-expansion-2026-11-23.md)。 [测试口径和边界](docs/testing.md)
+截至 2026-11-24，Git 跟踪的 `.mbt` 文件共 84 个、9,248 行（含空行和注释）。分类按生成文件头、路径和文件名后缀互斥统计：
 
-`0.1.0` 的发行包、注册表验证、双后端微基准和采用记录仍是旧版历史证据；本轮新增功能的公开包与注册表消费验证以 `0.2.0` 的发行记录为准。
+| 类别 | 文件数 | 行数 | 口径 |
+| --- | ---: | ---: | --- |
+| 实现与应用示例 | 28 | 3,356 | 生成器、运行库、匹配器、CLI 和手写业务示例 |
+| 测试 | 38 | 4,646 | `*_test.mbt` 和 `*_wbtest.mbt`，排除下方生成 mock |
+| 基准 | 5 | 245 | `*_bench_test.mbt` |
+| 解析器输入夹具 | 5 | 165 | `tools/fixtures/` 中不属于测试后缀的输入源码 |
+| 生成 mock 示例 | 8 | 836 | 文件首行带 `由 moon-mock 生成` 标记；单独列出，不计入手写实现 |
+| **合计** | **84** | **9,248** | Git 跟踪 `.mbt`；统计包含注释和空行 |
+
+复现口径：逐个读取 `git ls-files '*.mbt'` 返回的文件，按 LF 换行计数；非换行结尾的最后一行也计入。统计不包括 `.mbti`、Markdown、JavaScript 工具、未跟踪文件或构建产物。源码行数用于描述仓库规模，不是质量或覆盖率指标。
+
+### 性能与许可
+
+六个真实接口和三个合成接口的 CLI 基准分两批记录 396 个墙钟样本，其中 264 个来自真实接口；运行库微基准也保留了环境、原始输出与波动限制。 [发行前实测](docs/benchmarks/release-0.1.0.md) · [历史与微基准](docs/benchmarks/2026-11-22.md) · [主分支扩展基准](docs/benchmarks/main-expansion-2026-11-23.md) · [复现方法](docs/benchmarks/README.md)
+
+项目代码采用 [Apache License 2.0](LICENSE)。直接及传递依赖、上游参考和第三方测试数据的来源及许可说明见[NOTICE](NOTICE.md)。

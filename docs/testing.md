@@ -15,7 +15,11 @@
 | 公开0.2.0注册表验证 | 公开安装CLI并生成/检查三份mock；JS/native消费方各10/10 | `node tools/registry-smoke.mjs 0.2.0`；证据见 `releases/0.2.0-install.json` |
 | 真实项目固定版本接入（历史） | Exa SDK 2/2；moondb 5/5 | 见 adoption.md；不代表本轮 main 新增API |
 
-本轮源码规模通过 Git 跟踪文件及非忽略未跟踪 `.mbt` 文件逐行统计：84个文件，共9248行；按生成文件头识别的8个 mock 文件为836行；其余8412行为非生成实现、示例、测试和基准（实现6908行，测试/基准1504行）。`.mbti`、Markdown、JavaScript脚本和构建产物不计入。
+## 2026-11-24 本地复核补充
+
+为本轮仓库文档自查，在 Windows 本地重新运行固定工具链和核心命令。`moon version --all` 报告 `moon 0.1.20261028`、`moonc v0.10.18+6c83a7f62`；`moon fmt --check`、JS/native 各自的 `moon check --deny-warn` 和 `moon build --deny-warn` 成功；`moon test --target js --deny-warn` 与 native 对应命令均为210/210通过、0失败。仓库结构、提交身份、Markdown 本地链接与许可证静态检查使用 `node tools/repository-check.mjs`，最终结果见[当前验收自查](acceptance.md)。本次复验未重新运行扩展 CLI、消费方、基准或公开注册表脚本；这些项目仍以表中和下文原有日期及证据为准。
+
+截至2026-11-24，源码规模通过 `git ls-files '*.mbt'` 对 Git 跟踪文件逐行统计：84个文件、9248行。互斥分类为：实现与应用示例28个/3356行，测试38个/4646行，基准5个/245行，`tools/fixtures/` 中的解析器输入夹具5个/165行，首行带 `由 moon-mock 生成` 标记的示例 mock 8个/836行。非生成部分为8412行；此前把生成文件计入测试并将非生成代码误拆为6908/1504的口径已更正。统计包含注释与空行；按 LF 换行计数，非换行结尾的最后一行也计入；不含 `.mbti`、Markdown、JavaScript脚本、未跟踪文件和构建产物。分组规则及逐项仓库复核见[当前验收自查](acceptance.md)。
 
 消费方脚本须先构建对应目标的 CLI。打包脚本自行创建 ZIP，并在新目录验证发行包构建。native 打包脚本进一步安装 CLI 到临时 bin 后运行帮助命令。ZIP 检查覆盖 LICENSE、清单、缓存排除和路径越界。发行包测试与源码消费方有相同的十项测试，表中分别记录两种分发方式。
 
